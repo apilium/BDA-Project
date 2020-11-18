@@ -1,6 +1,6 @@
 ---
 title: "ProjectFirst"
-author: "Anonymous"
+author: "Teemu Sormunen, Abdullah Günay, Nicola Brazzale"
 date: "11/18/2020"
 output: pdf_document
 ---
