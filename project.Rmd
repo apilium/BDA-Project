@@ -5,8 +5,15 @@ date: "11/18/2020"
 output: pdf_document
 ---
 
+# Packages
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Load data
+```{r}
+file.name <- 'heart_failure_clinical_records_dataset.xls'
+data <- read_csv(file.name)
 ```
 
 ## R Markdown
