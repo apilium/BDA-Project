@@ -9,12 +9,13 @@ output: pdf_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(ggplot2)
+library(corrplot)
 ```
 
 Load data
 ```{r}
 file.name <- 'heart_failure_clinical_records_dataset.csv'
-data <- read_csv(file.name)
+heart <- read_csv(file.name)
 ```
 
 Plot histograms
