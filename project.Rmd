@@ -2,8 +2,25 @@
 title: "ProjectFirst"
 author: "Teemu Sormunen, Abdullah Günay, Nicola Brazzale"
 date: "11/18/2020"
-output: pdf_document
+header-includes:
+  - \usepackage[numbers]{natbib}
+# Citations
+bibliography: ./citations/sources.bib
+# csl: ./citations/vancouver-brackets.csl unnecessary?
+
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    citation_package: natbib
+
 ---
+
+# Introduction
+
+The dataset of 299 patients was produced as a result of study [@origpaper].
+
 
 # Packages
 ```{r setup, include=FALSE}
@@ -55,3 +72,5 @@ corrplot(x)
 
 # All models with bernoulli outcome (1-0, death or not)
 ```
+
+# References
