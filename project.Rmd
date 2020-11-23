@@ -17,11 +17,36 @@ output:
 
 ---
 
+\newpage
+
 # Introduction
 
+## Dataset explanation  
+
+Some of the terms in the dataset might not be familiar, and they are opened briefly here.
+
+* **Creatine phosphokinase (CPK)**  
+CPK is an enzyme, which helps to regulate the concentration of adenosine triphosphate (ATP) in cells. ATP is responsible for carrying energy. If the CPK level is high, it often means that there has been an injury or stress on a muscle tissue.   
+* **Ejection fraction (EF)**  
+EF is a measurement which describes how much blood left ventricle pumps out of heart with each contraction.
+Low EF might indicate potential heart issues.  
+* **Platelets**  
+Platelets are small cell fragments which can form clots. 
+Too many platelets can lead to clotting of blood vessels, 
+which in turn can lead to heart attack.
+
+* **Serum creatinine**  
+...
+
+* **serum sodium**  
+...
+
+
 The dataset of 299 patients was produced as a result of study [@origpaper].
+All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction.
 
 
+\newpage
 # Packages
 ```{r setup, include=FALSE}
 library(tidyverse)
