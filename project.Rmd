@@ -14,7 +14,7 @@ library(corrplot)
 
 Load data
 ```{r}
-file.name <- 'heart_failure_clinical_records_dataset.csv'
+file.name <- './data/heart_failure_clinical_records_dataset.csv'
 heart <- read_csv(file.name)
 ```
 
