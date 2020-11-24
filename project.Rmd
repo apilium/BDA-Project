@@ -33,7 +33,7 @@ Why do we need to solve this problem of predicting deaths?
 
 ## Modeling idea
 
-Multilevel models
+Modeling is done with package brms, which is a interface for non-linear multivariate multilevel models in Stan.
 
 
 # Dataset
@@ -71,6 +71,7 @@ Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and B
 library(tidyverse)
 library(ggplot2)
 library(corrplot)
+library(brms)
 ```
 
 Load data
@@ -110,6 +111,41 @@ p <- length(pred)
 n <- nrow(heart)
 x = cor(heart[, c(target,pred)]) 
 corrplot(x)
+```
+# BRMS modeling
+
+In BRMS modeling, the parameters are said to either be population level or group level. Population level probably means the same thing as regular parameters in our course, and group level equals hyper parameters (?????????????????)
+
+Brms example, investigate results based on age.
+**Family argument** specifies the distribution family of the output.  
+
+**Prior argument** for each of the parameters, in this case only age. One can set different priors for each population level parameter, or group level parameter.
+```{r}
+# Split test and train data
+test.size <- 0.3
+train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
+train.data <- heart[train.indice,]
+test.data <- heart[-train.indice,]
+
+# Fit model based on age
+fit <- brm(formula = DEATH_EVENT ~ age,
+           data = train.data,
+           family = bernoulli(),
+           prior = c(set_prior("normal(50,50)", coef="age"))
+           )
+```
+Analyze stan code
+```{r}
+summary(fit)
+stancode(fit)
+```
+Predict survival
+```{r}
+preds <- round(predict(fit, newdata = test.data))[1]
+pred.corr <- preds == test.data$DEATH_EVENT
+
+acc <- length(pred.corr[pred.corr == TRUE])/nrow(test.data)
+acc
 ```
 
 ```{r}
