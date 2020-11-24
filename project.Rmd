@@ -21,7 +21,24 @@ output:
 
 # Introduction
 
-## Dataset explanation  
+## The problem
+
+Write about heart diseases, whats the problem? (not knowing when patient is dying?)
+[@origpaper]
+
+## The motivation
+
+Why do we need to solve this problem of predicting deaths? 
+[@origpaper]
+
+## Modeling idea
+
+Multilevel models
+
+
+# Dataset
+
+## Term explanation  
 
 Some of the terms in the dataset might not be familiar, and they are opened briefly here.
 
@@ -41,10 +58,12 @@ which in turn can lead to heart attack.
 * **serum sodium**  
 ...
 
+## Dataset introduction
 
-The dataset of 299 patients was produced as a result of study [@origpaper].
+The dataset of 299 patients was produced as a result of study [@origpaper] from Pakistani's city Faisalabad.
 All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction.
-
+EF, serum creatinine and platelets are categorical variables, and age, serum sodium and CPK are continuous variables.  
+Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.
 
 \newpage
 # Packages
@@ -76,6 +95,10 @@ ggplot(heart, aes(x=platelets)) + geom_histogram(aes(fill=as.character(DEATH_EVE
 ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
 
 ```
+
+
+
+
 
 Correlation matrix
 
