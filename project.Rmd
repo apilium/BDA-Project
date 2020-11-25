@@ -22,13 +22,11 @@ output:
 # Introduction
 
 ## The problem
-
-Write about heart diseases, whats the problem? (not knowing when patient is dying?)
+Cardiovascular Heart Disease (CHD) is the top reason causing 31% of deaths globally. Pakistan is one of the countries where CHD is increasing significantly, and previous studies do not directly apply to Pakistani area due to different diet patterns.
 [@origpaper]
 
 ## The motivation
-
-Why do we need to solve this problem of predicting deaths? 
+The motivation is to estimate death rates and major risk factors for heart failure to have __predictive power(?????????)__. 
 [@origpaper]
 
 ## Modeling idea
@@ -43,25 +41,32 @@ Modeling is done with package brms, which is a interface for non-linear multivar
 Some of the terms in the dataset might not be familiar, and they are opened briefly here.
 
 * **Creatine phosphokinase (CPK)**  
-CPK is an enzyme, which helps to regulate the concentration of adenosine triphosphate (ATP) in cells. ATP is responsible for carrying energy. If the CPK level is high, it often means that there has been an injury or stress on a muscle tissue.   
+CPK is an enzyme, which helps to regulate the concentration of adenosine triphosphate (ATP) in cells. ATP is responsible for carrying energy. If the CPK level is high, it often means that there has been an injury or stress on a muscle tissue. Although CPK is one the oldest markers of heart attack, high CPK might also indicate of acute muscle injury along with acute heart problems.  
+Normal level of CPK ranges from 20 to 200 IU/L [@phosphokinase]
+
 * **Ejection fraction (EF)**  
-EF is a measurement which describes how much blood left ventricle pumps out of heart with each contraction.
+EF is a measurement in percentage which describes how much blood left ventricle pumps out of heart with each contraction.
 Low EF might indicate potential heart issues.  
+Normal EF is 50 to 70 percent, while measurement under 40 percept might be an indicator of heart failure or cardiomyopathy. [@ef]  
+
 * **Platelets**  
 Platelets are small cell fragments which can form clots. 
 Too many platelets can lead to clotting of blood vessels, 
-which in turn can lead to heart attack.
+which in turn can lead to heart attack. Too 
+Normal range of platelets is from 150 000 to 450 000. [@platelets]
 
 * **Serum creatinine**  
-...
+When creatine breaks down, it forms a waste product called creatinine. Kidneys normally remove creatinine from body. Serum creatinine measures level of creatinine in the blood, indicating the kidney health. High levels of creatinine might indicate a kidney dysfunctioning.  
+Normal level of creatinine range from 0.9 to 1.3 mg/dL in men and 0.6 to 1.1 mg/dL in women who are 18 to 60 years old. [@creatinine_serum]
 
-* **serum sodium**  
-...
+* **Serum sodium**  
+Serum sodium measures the amount of sodium in blood. Sodium enters blood through food and drink, and leaves by urine, stool and sweat. Too much sodium can cause blood pressure, while too little sodium can cause nausea, vomiting, exhaustion or dizziness.  
+Normal levels of serum sodium are 135 to 145 mEq/L, according to Mayo Clinic. There are however different interpretations of "normal".[@sodium]
 
 ## Dataset introduction
 
-The dataset of 299 patients was produced as a result of study [@origpaper] from Pakistani's city Faisalabad.
-All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction.
+The dataset of 299 patients was produced as a result of study [@origpaper] from Pakistani's city Faisalabad. All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction.
+The dataset has 105 women, and 194 men.
 EF, serum creatinine and platelets are categorical variables, and age, serum sodium and CPK are continuous variables.  
 Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.
 
@@ -131,7 +136,8 @@ test.data <- heart[-train.indice,]
 fit <- brm(formula = DEATH_EVENT ~ age,
            data = train.data,
            family = bernoulli(),
-           prior = c(set_prior("normal(50,50)", coef="age"))
+           prior = c(set_prior("normal(50,50)", coef="age")),
+           refresh=0
            )
 ```
 Analyze stan code
