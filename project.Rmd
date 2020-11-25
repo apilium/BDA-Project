@@ -117,6 +117,7 @@ n <- nrow(heart)
 x = cor(heart[, c(target,pred)]) 
 corrplot(x)
 ```
+
 # BRMS modeling
 
 In BRMS modeling, the parameters are said to either be population level or group level. Population level probably means the same thing as regular parameters in our course, and group level equals hyper parameters (?????????????????)
