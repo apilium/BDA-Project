@@ -1,7 +1,11 @@
 library(ggplot2)
 library(bayesplot)
 library(corrplot)
+<<<<<<< HEAD
 library(brms)
+=======
+
+>>>>>>> f506bef08865f7d59b0c542d202f935e7d319450
 heart <- read.csv(file = 'data/heart_failure_clinical_records_dataset.csv')
 head(heart)
 
@@ -25,6 +29,25 @@ p <- length(pred)
 n <- nrow(heart)
 x = cor(heart[, c(target,pred)]) 
 corrplot(x)
+
+model <- lm(DEATH_EVENT~age+ejection_fraction+serum_creatinine+serum_sodium, data = as.data.frame(heart))
+
+## all oveall diagnostic measures and eigenvalues with intercept
+od<-omcdiag(model)
+
+## all oveall diagnostic measures and eigenvalues without intercept
+omcdiag(model, Inter=FALSE)
+
+## all oveall diagnostic measures and eigenvalues with intercept
+## with different determinant and confidence level threshold
+
+omcdiag(model, detr=0.001, conf=0.99)
+
+## returns the determinant of correlation matrix |X'X|
+omcdiag(model)[1]
+
+## plot with default threshold of VIF and Eigenvalues with intercept
+mc.plot(model, vif=10, ev = 0.1)
 
 #PRIORS ?
 # 1 LINEAR MODEL WITH VARIABLE SELECTION
