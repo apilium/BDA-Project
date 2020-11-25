@@ -1,11 +1,11 @@
 library(ggplot2)
 library(bayesplot)
 library(corrplot)
-<<<<<<< HEAD
-library(brms)
-=======
 
->>>>>>> f506bef08865f7d59b0c542d202f935e7d319450
+library(brms)
+
+
+
 heart <- read.csv(file = 'data/heart_failure_clinical_records_dataset.csv')
 head(heart)
 
