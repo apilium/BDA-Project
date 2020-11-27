@@ -88,7 +88,7 @@ acc <- length(pred1.corr[pred1.corr == TRUE])/nrow(test.data)
 acc
 
 #NON LINEAR 
-fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + s(age) + s(serum_creatinine),
+fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium),
            data = train.data,
            family = "gaussian",
            refresh=0
