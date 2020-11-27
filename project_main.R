@@ -1,9 +1,8 @@
 library(ggplot2)
 library(bayesplot)
 library(corrplot)
-
 library(brms)
-
+library(rstanarm)
 
 
 heart <- read.csv(file = 'data/heart_failure_clinical_records_dataset.csv')
@@ -21,6 +20,8 @@ ggplot(heart, aes(x=platelets)) + geom_histogram(aes(fill=as.character(DEATH_EVE
 
 ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
 
+pair <- c("age", "creatinine_phosphokinase", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium") 
+pairs(heart[,pair])
 
 pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia") 
 target <- c("DEATH_EVENT")
@@ -84,4 +85,17 @@ preds1 <- round(predict(fit1, newdata = test.data))[1]
 pred1.corr <- preds1 == test.data$DEATH_EVENT
 
 acc <- length(pred1.corr[pred1.corr == TRUE])/nrow(test.data)
+acc
+
+#NON LINEAR 
+fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + s(age) + s(serum_creatinine),
+           data = train.data,
+           family = "gaussian",
+           refresh=0
+)
+
+preds <- round(predict(fit_nl, newdata = test.data))[1]
+pred.corr <- preds == test.data$DEATH_EVENT
+
+acc <- length(pred.corr[pred.corr == TRUE])/nrow(test.data)
 acc
