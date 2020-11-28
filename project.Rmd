@@ -161,7 +161,7 @@ acc
 #NON LINEAR 
 fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium),
            data = train.data,
-           family = "gaussian",
+           family = "poisson",
            refresh=0
 )
 
