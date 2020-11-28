@@ -164,12 +164,6 @@ fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(s
            family = "poisson",
            refresh=0
 )
-
-preds <- round(predict(fit_nl, newdata = test.data))[1]
-pred.corr <- preds == test.data$DEATH_EVENT
-
-acc <- length(pred.corr[pred.corr == TRUE])/nrow(test.data)
-acc
 ```
 
 # References

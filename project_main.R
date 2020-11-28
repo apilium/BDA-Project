@@ -90,12 +90,15 @@ acc
 #NON LINEAR 
 fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium),
            data = train.data,
-           family = "gaussian",
+           family = "poisson",
            refresh=0
 )
 
-preds <- round(predict(fit_nl, newdata = test.data))[1]
-pred.corr <- preds == test.data$DEATH_EVENT
+summary(fit_nl)
 
-acc <- length(pred.corr[pred.corr == TRUE])/nrow(test.data)
-acc
+fit_nlFull <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium) + high_blood_pressure + s(creatinine_phosphokinase) + diabetes + smoking + anaemia,
+                     data = train.data,
+                     family = "poisson",
+                     refresh=0
+)
+
