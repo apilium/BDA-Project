@@ -70,6 +70,29 @@ The dataset has 105 women, and 194 men.
 EF, serum creatinine and platelets are categorical variables, and age, serum sodium and CPK are continuous variables.  
 Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.
 
+# Models
+
+## Prior choices 
+
+## $\hat{R}$ convergence 
+
+## HMC specific convergence diagnostics (divergences, tree depth) with interpretation of the results
+
+
+## Effective sample size diagnostic (n_eff or ESS) and an interpretation of the results
+
+
+## Posterior predictive checking and interpretation of the results
+
+## Model comparison and interpretation of the results
+
+## Predictive performance assessment (classification)
+
+## Prior sensitivity analysis (alternative prior tested)
+
+## Discussion of problems and further improvements
+
+
 \newpage
 # Packages
 ```{r setup, include=FALSE}
@@ -230,5 +253,7 @@ hist(looHier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  x
 
 pp_check(fitHier, newdata = test.data)
 ```
+
+# Conclusion
 
 # References
