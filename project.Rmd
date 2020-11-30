@@ -199,6 +199,7 @@ fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(s
            family = "poisson",
            refresh=0
 )
+pp_check(fit_nl, newdata = test.data)
 ```
 
 First try with Hierarchical model
