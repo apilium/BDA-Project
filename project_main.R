@@ -3,10 +3,16 @@ library(bayesplot)
 library(corrplot)
 library(brms)
 library(rstanarm)
-
+library(loo)
 
 heart <- read.csv(file = 'data/heart_failure_clinical_records_dataset.csv')
 head(heart)
+
+heart$age[heart$age<=55] = 0
+heart$age[heart$age>55 & heart$age<70] = 1
+heart$age[heart$age>=70] = 2
+
+hist(heart$age)
 
 ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(sex)), bins = 30) + labs(fill = "Sex")
 
@@ -61,31 +67,31 @@ train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
 train.data <- heart[train.indice,]
 test.data <- heart[-train.indice,]
 
-fit <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium,
+fitFeatSel <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium,
            data = train.data,
            family = bernoulli(),
            prior = set_prior('normal(0, 1000)'),
            refresh=0
 )
 
-preds <- round(predict(fit, newdata = test.data))[1]
-pred.corr <- preds == test.data$DEATH_EVENT
+predsFeatSel <- round(predict(fitFeatSel, newdata = test.data)[,1])
+predsFeatSel.corr <- predsFeatSel == test.data$DEATH_EVENT
 
-acc <- length(pred.corr[pred.corr == TRUE])/nrow(test.data)
-acc
+accFeatSel <- length(predsFeatSel.corr[predsFeatSel.corr == TRUE])/nrow(test.data)
+accFeatSel
 
-fit1 <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
+fitFull <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
            data = train.data,
            family = bernoulli(),
-           prior = set_prior('normal(0, 1000)'),
+           prior = set_prior('normal(50, 1000)'),
            refresh=0
 )
 
-preds1 <- round(predict(fit1, newdata = test.data))[1]
-pred1.corr <- preds1 == test.data$DEATH_EVENT
+predsFull <- round(predict(fitFull, newdata = test.data))[1]
+predFull.corr <- predsFull == test.data$DEATH_EVENT
 
-acc <- length(pred1.corr[pred1.corr == TRUE])/nrow(test.data)
-acc
+accFull <- length(predFull.corr[predFull.corr == TRUE])/nrow(test.data)
+accFull
 
 #NON LINEAR 
 fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium),
@@ -101,4 +107,29 @@ fit_nlFull <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) +
                      family = "poisson",
                      refresh=0
 )
+
+fitHier <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
+           data = train.data,
+           family = bernoulli(),
+           prior = set_prior('normal(0, 1000)'),
+           refresh=0,
+           control = list(adapt_delta = 0.99),
+           save_all_pars=T,
+           save_pars=save_pars(all = T)
+)
+
+summary(fitHier)
+looHier<-loo(fitHier)
+
+predsHier <- round(predict(fitHier, newdata = test.data)[,1])
+predsHier.corr <- predsHier == test.data$DEATH_EVENT
+
+accHier <- length(predsHier.corr[predsHier.corr == TRUE])/nrow(test.data)
+accHier
+
+hist(looHier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency",
+     freq = FALSE)
+
+pp_check(fitHier, newdata = test.data)
 

@@ -78,12 +78,21 @@ library(ggplot2)
 library(corrplot)
 library(brms)
 library(rstanarm)
+library(loo)
 ```
 
 Load data
 ```{r}
 file.name <- './data/heart_failure_clinical_records_dataset.csv'
 heart <- read_csv(file.name)
+```
+Data preprocessing - Age Bins
+
+```{r}
+heart$age[heart$age<=55] = 0
+heart$age[heart$age>55 & heart$age<70] = 1
+heart$age[heart$age>=70] = 2
+hist(heart$age)
 ```
 
 Plot histograms
@@ -139,26 +148,49 @@ train.data <- heart[train.indice,]
 test.data <- heart[-train.indice,]
 
 # Fit model based on age
-fit <- brm(formula = DEATH_EVENT ~ age,
+fitFeatSel <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium,
            data = train.data,
            family = bernoulli(),
-           prior = c(set_prior("normal(50,50)", coef="age")),
+           prior = set_prior('normal(0, 1000)'),
            refresh=0
-           )
+)
 ```
 Analyze stan code
 ```{r}
-summary(fit)
-stancode(fit)
+summary(fitFeatSel)
+stancode(fitFeatSel)
 ```
 Predict survival
 ```{r}
-preds <- round(predict(fit, newdata = test.data))[1]
-pred.corr <- preds == test.data$DEATH_EVENT
+predsFeatSel <- round(predict(fitFeatSel, newdata = test.data)[,1])
+predsFeatSel.corr <- predsFeatSel == test.data$DEATH_EVENT
 
-acc <- length(pred.corr[pred.corr == TRUE])/nrow(test.data)
-acc
+accFeatSel <- length(predsFeatSel.corr[predsFeatSel.corr == TRUE])/nrow(test.data)
+accFeatSel
+
+pp_check(fitFeatSel, newdata = test.data)
 ```
+
+Full model 
+
+```{r}
+
+fitFull <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
+           data = train.data,
+           family = bernoulli(),
+           prior = set_prior('normal(50, 1000)'),
+           refresh=0
+)
+
+predsFull <- round(predict(fitFull, newdata = test.data))[1]
+predFull.corr <- predsFull == test.data$DEATH_EVENT
+
+accFull <- length(predFull.corr[predFull.corr == TRUE])/nrow(test.data)
+accFull
+
+pp_check(fitFull, newdata = test.data)
+```
+
 
 ```{r}
 #NON LINEAR 
@@ -167,6 +199,35 @@ fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(s
            family = "poisson",
            refresh=0
 )
+```
+
+First try with Hierarchical model
+
+```{r}
+fitHier <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
+           data = train.data,
+           family = bernoulli(),
+           prior = set_prior('normal(0, 1000)'),
+           refresh=0,
+           control = list(adapt_delta = 0.99),
+           save_all_pars=T,
+           save_pars=save_pars(all = T)
+)
+
+summary(fitHier)
+loo(fitHier, moment_match = TRUE)
+
+predsHier <- round(predict(fitHier, newdata = test.data)[,1])
+predsHier.corr <- predsHier == test.data$DEATH_EVENT
+
+accHier <- length(predsHier.corr[predsHier.corr == TRUE])/nrow(test.data)
+accHier
+
+hist(looHier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency",
+     freq = FALSE)
+
+pp_check(fitHier, newdata = test.data)
 ```
 
 # References
