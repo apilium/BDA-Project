@@ -21,18 +21,30 @@ output:
 
 # Introduction
 
+In this project we analyse the data from Heart desease dataset [@origpaper]. We perform a Bayesian analysis of the data using this sequence of operations:
+• Overview of analysis problem and of the dataset
+• Data preprocsessing and visualisation
+• Prior choice discussion
+• Models used in our analysis
+• $\hat{R}$ convergence
+• HMC specific convergence diagnostics
+• Effective sample size diagnostic (n_eff or ESS)
+• Model comparison
+• Prior sensitivity analysis
+• Discussion and conclusion
+
 ## The problem
 Cardiovascular Heart Disease (CHD) is the top reason causing 31% of deaths globally. Pakistan is one of the countries where CHD is increasing significantly, and previous studies do not directly apply to Pakistani area due to different diet patterns.
 [@origpaper]
 
 ## The motivation
-The motivation is to estimate death rates and major risk factors for heart failure to have __predictive power(?????????)__. 
-[@origpaper]
+With this project we aim to estimate death events and the major risk factors for heart failure with, possibly, high accuracy [@origpaper].
 
 ## Modeling idea
 
+We created 3 models which are then compared based on $\hat{r}$, $n_{eff}$, using the loo package and the classification accuracy. 
+The 1st model is the reduced model and consists in fewer varibles which are selected base on their corrolection with the death event. The 2nd model consists in all varibles except for the varibale "time" as we believe that doens't represent an important factor in the death event scenario. The 3rd model used is a hierarchical model where we treated age class patients in a group with respect to the other selected variables. The 4th model is a non-linear model, as the hierarchical one we took in considertion only the selected varibales in the first model.
 Modeling is done with package brms, which is a interface for non-linear multivariate multilevel models in Stan.
-
 
 # Dataset
 
@@ -73,6 +85,8 @@ Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and B
 # Models
 
 ## Prior choices 
+
+The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.
 
 ## $\hat{R}$ convergence 
 
@@ -137,10 +151,6 @@ ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DE
 
 Plot individual 
 
-
-
-
-
 Correlation matrix
 
 ```{r}
@@ -169,7 +179,9 @@ test.size <- 0.3
 train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
 train.data <- heart[train.indice,]
 test.data <- heart[-train.indice,]
+```
 
+```{r}
 # Fit model based on age
 fitFeatSel <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium,
            data = train.data,
@@ -191,13 +203,16 @@ predsFeatSel.corr <- predsFeatSel == test.data$DEATH_EVENT
 accFeatSel <- length(predsFeatSel.corr[predsFeatSel.corr == TRUE])/nrow(test.data)
 accFeatSel
 
+looFeatSel<-loo(fitFeatSel)
+hist(looFeatSel$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency", freq = FALSE)
+
 pp_check(fitFeatSel, newdata = test.data)
 ```
 
 Full model 
 
 ```{r}
-
 fitFull <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
            data = train.data,
            family = bernoulli(),
@@ -205,11 +220,18 @@ fitFull <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinin
            refresh=0
 )
 
-predsFull <- round(predict(fitFull, newdata = test.data))[1]
+predsFull <- round(predict(fitFull, newdata = test.data)[,1])
 predFull.corr <- predsFull == test.data$DEATH_EVENT
 
 accFull <- length(predFull.corr[predFull.corr == TRUE])/nrow(test.data)
 accFull
+
+looFull<-loo(fitFull)
+hist(looFull$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency", freq = FALSE)
+
+summary(fitFull)
+stancode(fitFull)
 
 pp_check(fitFull, newdata = test.data)
 ```
@@ -217,12 +239,16 @@ pp_check(fitFull, newdata = test.data)
 
 ```{r}
 #NON LINEAR 
-fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium),
-           data = train.data,
-           family = "poisson",
-           refresh=0
-)
-pp_check(fit_nl, newdata = test.data)
+fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium), data = train.data, family = "poisson", refresh=0)
+
+summary(fitNonLinear)
+stancode(fitNonLinear)
+
+looNL<-loo(fitNonLinear)
+hist(looNL$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency", freq = FALSE)
+
+pp_check(fitNonLinear, newdata = test.data)
 ```
 
 First try with Hierarchical model
@@ -239,7 +265,9 @@ fitHier <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + se
 )
 
 summary(fitHier)
-loo(fitHier, moment_match = TRUE)
+
+looHier<-loo(fitHier, moment_match = TRUE)
+looHier
 
 predsHier <- round(predict(fitHier, newdata = test.data)[,1])
 predsHier.corr <- predsHier == test.data$DEATH_EVENT

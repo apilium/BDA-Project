@@ -29,7 +29,7 @@ ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DE
 pair <- c("age", "creatinine_phosphokinase", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium") 
 pairs(heart[,pair])
 
-pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia") 
+pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia", "time") 
 target <- c("DEATH_EVENT")
 #formula <- paste("DEATH_EVENT ~", paste(pred, collapse = "+"))
 p <- length(pred)
@@ -114,12 +114,13 @@ fitHier <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + se
            prior = set_prior('normal(0, 1000)'),
            refresh=0,
            control = list(adapt_delta = 0.99),
-           save_all_pars=T,
-           save_pars=save_pars(all = T)
+           save_all_pars=TRUE,
+           save_pars=save_pars(all = T),
 )
 
 summary(fitHier)
-looHier<-loo(fitHier)
+looHier<-loo(fitHier, moment_match = TRUE)
+looHier
 
 predsHier <- round(predict(fitHier, newdata = test.data)[,1])
 predsHier.corr <- predsHier == test.data$DEATH_EVENT
