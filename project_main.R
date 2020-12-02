@@ -102,12 +102,20 @@ fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(s
 
 summary(fit_nl)
 
-fit_nlFull <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium) + high_blood_pressure + s(creatinine_phosphokinase) + diabetes + smoking + anaemia,
+fit_nlFull <- stan_gamm4(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium) + high_blood_pressure + s(creatinine_phosphokinase) + diabetes + smoking + anaemia,
                      data = train.data,
-                     family = "poisson",
+                     family = "gaussian",
                      refresh=0
 )
 
+summary(fit_nlFull)
+stancode(fit_nlFull)
+
+looNL<-loo(fit_nlFull)
+hist(looNL$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency", freq = FALSE)
+
+pp_check(fit_nlFull, newdata = test.data)
 fitHier <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
            data = train.data,
            family = bernoulli(),

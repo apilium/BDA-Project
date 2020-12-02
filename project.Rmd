@@ -239,7 +239,7 @@ pp_check(fitFull, newdata = test.data)
 
 ```{r}
 #NON LINEAR 
-fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium), data = train.data, family = "poisson", refresh=0)
+fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium), data = train.data, family = "gaussian", refresh=0)
 
 summary(fitNonLinear)
 stancode(fitNonLinear)
