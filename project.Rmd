@@ -98,6 +98,11 @@ Load data
 file.name <- './data/heart_failure_clinical_records_dataset.csv'
 heart <- read_csv(file.name)
 ```
+Prevent text overflow on PDF
+```{r}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
 
 # Data preprocessing and visualization
 
@@ -166,9 +171,9 @@ test.data <- heart[-train.indice,]
 
 The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.  
 
-By default BRMS uses improper flat prior over the reals for population level parameters, and 
+By default BRMS uses improper flat prior over the reals for population level parameters. Group level parameter is assumed to come from multivariate normal distribution with zero mean and unknown covariance matrix. 
 
-## WIP: Model fitting
+## Model fitting
 ### Full model
 
 Stan code for full model can be found in Appendix A.  
@@ -182,7 +187,7 @@ fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatini
 )
 ```
 
-### Feature selected model
+### WIP: Feature selected model
 
 Stan code for feature selected model can be found in Appendix B.  
 
@@ -203,8 +208,8 @@ fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_cr
 Stan code for hierarchical model can be found in Appendix C.  
 
 In hierarchical model, we choose age as hyperparameter.  
-First we will discretize age data in to 3 equal depth bins.
-Data preprocessing - Age Bins
+First we will discretize age data in to 3 equal depth bins.  
+Doing
 
 ```{r}
 heart$age[heart$age<=55] = 0
@@ -281,21 +286,21 @@ fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creat
 # Conclusion
 
 \newpage
-# Appendix
+# Appendix {-}
 
-A. Stan code of full model
+## A. Stan code of full model {-}
 ```{r}
 stancode(fit.full)
 ```
 
 \newpage
-B. Stan feature selected model
+## B. Stan feature selected model {-}
 ```{r}
 stancode(fit.feature_selected)
 ```
 
 \newpage
-C. Stan hierarhical model
+## C. Stan hierarhical model {-}
 ```{r}
 stancode(fit.hierarchical)
 ```
