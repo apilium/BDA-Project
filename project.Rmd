@@ -82,11 +82,130 @@ The dataset has 105 women, and 194 men.
 EF, serum creatinine and platelets are categorical variables, and age, serum sodium and CPK are continuous variables.  
 Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.
 
+\newpage
+# Packages
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(corrplot)
+library(brms)
+library(rstanarm)
+library(loo)
+```
+
+Load data
+```{r}
+file.name <- './data/heart_failure_clinical_records_dataset.csv'
+heart <- read_csv(file.name)
+```
+
+# Data
+Plot histograms
+
+```{r}
+ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(sex)), bins = 30) + labs(fill = "Sex")
+
+ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
+
+ggplot(heart, aes(x=creatinine_phosphokinase)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
+
+ggplot(heart, aes(x=ejection_fraction)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
+
+ggplot(heart, aes(x=platelets)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
+
+ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
+
+```
+
+Plot individual 
+
+Correlation matrix
+
+```{r}
+pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia") 
+target <- c("DEATH_EVENT")
+#formula <- paste("DEATH_EVENT ~", paste(pred, collapse = "+"))
+p <- length(pred)
+n <- nrow(heart)
+x = cor(heart[, c(target,pred)]) 
+corrplot(x)
+```
+
 # Models
+
+We chose to use BRMS for modeling, due to ...
+
+In BRMS modeling, the parameters are said to either be population level or group level. Population level probably means the same thing as regular parameters in our course, and group level equals hyper parameters (?????????????????)
+
+Brms example, investigate results based on age.
+**Family argument** specifies the distribution family of the output.  
+
+**Prior argument** for each of the parameters, in this case only age. One can set different priors for each population level parameter, or group level parameter.
+```{r}
+# Split test and train data
+test.size <- 0.3
+train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
+train.data <- heart[train.indice,]
+test.data <- heart[-train.indice,]
+```
 
 ## Prior choices 
 
 The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.
+
+## Model fitting
+### WIP: Full model
+
+Full model includes all the parameters that are specified in the dataset. 
+
+```{r}
+fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
+           data = train.data,
+           family = bernoulli(),
+           refresh=0
+)
+```
+
+### WIP: Feature selected model
+
+In feature selected model, we hand pick the features that seems to be the most promising with regards to fitting the model. As described above, we saw that ejection_fraction, serum_creatinine, serum_sodium and age were correlating highly to death. 
+
+```{r}
+fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
+                            data = train.data,
+                            family = bernoulli(),
+                            refresh = 0)
+
+```
+
+
+
+### WIP: Hierarchical model
+
+In hierarchical model, we choose age and sex as hyperparameters.  
+
+First we will discretize age data in to 3 equal depth bins.
+Data preprocessing - Age Bins
+
+```{r}
+heart$age[heart$age<=55] = 0
+heart$age[heart$age>55 & heart$age<70] = 1
+heart$age[heart$age>=70] = 2
+hist(heart$age)
+```
+
+Then we can fit the model
+```{r}
+fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
+           data = train.data,
+           family = bernoulli(),
+           prior = set_prior('normal(0, 1000)'),
+           refresh=0,
+           control = list(adapt_delta = 0.99),
+           save_all_pars=T,
+           save_pars=save_pars(all = T)
+)
+```
 
 ## $\hat{R}$ convergence 
 
@@ -106,31 +225,6 @@ The types of priors we considered in this project are uniformative priors and re
 
 ## Discussion of problems and further improvements
 
-
-\newpage
-# Packages
-```{r setup, include=FALSE}
-library(tidyverse)
-library(ggplot2)
-library(corrplot)
-library(brms)
-library(rstanarm)
-library(loo)
-```
-
-Load data
-```{r}
-file.name <- './data/heart_failure_clinical_records_dataset.csv'
-heart <- read_csv(file.name)
-```
-Data preprocessing - Age Bins
-
-```{r}
-heart$age[heart$age<=55] = 0
-heart$age[heart$age>55 & heart$age<70] = 1
-heart$age[heart$age>=70] = 2
-hist(heart$age)
-```
 
 Plot histograms
 
@@ -163,38 +257,10 @@ x = cor(heart[, c(target,pred)])
 corrplot(x)
 ```
 
-```{r}
-```
 # BRMS modeling
 
-In BRMS modeling, the parameters are said to either be population level or group level. Population level probably means the same thing as regular parameters in our course, and group level equals hyper parameters (?????????????????)
 
-Brms example, investigate results based on age.
-**Family argument** specifies the distribution family of the output.  
 
-**Prior argument** for each of the parameters, in this case only age. One can set different priors for each population level parameter, or group level parameter.
-```{r}
-# Split test and train data
-test.size <- 0.3
-train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
-train.data <- heart[train.indice,]
-test.data <- heart[-train.indice,]
-```
-
-```{r}
-# Fit model based on age
-fitFeatSel <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium,
-           data = train.data,
-           family = bernoulli(),
-           prior = set_prior('normal(0, 1000)'),
-           refresh=0
-)
-```
-Analyze stan code
-```{r}
-summary(fitFeatSel)
-stancode(fitFeatSel)
-```
 Predict survival
 ```{r}
 predsFeatSel <- round(predict(fitFeatSel, newdata = test.data)[,1])
@@ -210,15 +276,10 @@ hist(looFeatSel$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",
 pp_check(fitFeatSel, newdata = test.data)
 ```
 
-Full model 
+Full model: SCRAP CODE
 
 ```{r}
-fitFull <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
-           data = train.data,
-           family = bernoulli(),
-           prior = set_prior('normal(50, 1000)'),
-           refresh=0
-)
+
 
 predsFull <- round(predict(fitFull, newdata = test.data)[,1])
 predFull.corr <- predsFull == test.data$DEATH_EVENT
@@ -236,7 +297,7 @@ stancode(fitFull)
 pp_check(fitFull, newdata = test.data)
 ```
 
-
+NON-LINEAR SCRAP CODE:
 ```{r}
 #NON LINEAR 
 fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium), data = train.data, family = "gaussian", refresh=0)
@@ -251,19 +312,9 @@ hist(looNL$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xla
 pp_check(fitNonLinear, newdata = test.data)
 ```
 
-First try with Hierarchical model
+HIERARCHICAL: Scrap code left from previous implementation
 
 ```{r}
-fitHier <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
-           data = train.data,
-           family = bernoulli(),
-           prior = set_prior('normal(0, 1000)'),
-           refresh=0,
-           control = list(adapt_delta = 0.99),
-           save_all_pars=T,
-           save_pars=save_pars(all = T)
-)
-
 summary(fitHier)
 
 looHier<-loo(fitHier, moment_match = TRUE)
