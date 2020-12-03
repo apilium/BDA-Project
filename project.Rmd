@@ -146,9 +146,9 @@ predict.pointwise.accuracy <- function(fitted.model, test.data) {
 
 # Models
 
-We chose to use BRMS for modeling, due to ...
+We chose to use BRMS for modeling. It stands for Bayesian Regression Models for Stan. It's an interface to fit Bayesian generalized (non-)linear multivariate models using Stan. As we need to do analysis for binary response variables, we need some sort of a generalized linear model. We also chose BRMS due to its ease of use when fitting such complicated multilevel generalized linear models.
 
-In BRMS modeling, the parameters are said to either be population level or group level. Population level probably means the same thing as regular parameters in our course, and group level equals hyper parameters (?????????????????)
+In BRMS modeling, the parameters are said to either be population level or group level. Population-level parameters means the same thing as regular parameters in our course, and group-level parameters mean hyperparameters in hierarchical case.  
 
 Brms example, investigate results based on age.
 **Family argument** specifies the distribution family of the output.  
@@ -164,12 +164,15 @@ test.data <- heart[-train.indice,]
 
 ## Prior choices 
 
-The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.
+The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.  
+
+By default BRMS uses improper flat prior over the reals for population level parameters, and 
 
 ## WIP: Model fitting
 ### Full model
 
-Full model includes all the parameters that are specified in the dataset. 
+Stan code for full model can be found in Appendix A.  
+Full model includes all the parameters that are specified in the dataset.
 
 ```{r}
 fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
@@ -181,22 +184,25 @@ fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatini
 
 ### Feature selected model
 
+Stan code for feature selected model can be found in Appendix B.  
+
 In feature selected model, we hand pick the features that seems to be the most promising with regards to fitting the model. As described above, we saw that ejection_fraction, serum_creatinine, serum_sodium and age were correlating highly to death. 
 
 ```{r}
 fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
                             data = train.data,
                             family = bernoulli(),
-                            refresh = 0)
-
+                            refresh = 0
+                            )
 ```
 
 
 
 ### Hierarchical model
 
-In hierarchical model, we choose age and sex as hyperparameters.  
+Stan code for hierarchical model can be found in Appendix C.  
 
+In hierarchical model, we choose age as hyperparameter.  
 First we will discretize age data in to 3 equal depth bins.
 Data preprocessing - Age Bins
 
@@ -212,7 +218,6 @@ Then we can fit the model
 fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
            data = train.data,
            family = bernoulli(),
-           prior = set_prior('normal(0, 1000)'),
            refresh=0,
            control = list(adapt_delta = 0.99),
            save_all_pars=T,
@@ -275,4 +280,25 @@ fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creat
 
 # Conclusion
 
+\newpage
+# Appendix
+
+A. Stan code of full model
+```{r}
+stancode(fit.full)
+```
+
+\newpage
+B. Stan feature selected model
+```{r}
+stancode(fit.feature_selected)
+```
+
+\newpage
+C. Stan hierarhical model
+```{r}
+stancode(fit.hierarchical)
+```
+
+\newpage
 # References
