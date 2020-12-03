@@ -82,31 +82,6 @@ The dataset has 105 women, and 194 men.
 EF, serum creatinine and platelets are categorical variables, and age, serum sodium and CPK are continuous variables.  
 Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.
 
-# Models
-
-## Prior choices 
-
-The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.
-
-## $\hat{R}$ convergence 
-
-## HMC specific convergence diagnostics (divergences, tree depth) with interpretation of the results
-
-
-## Effective sample size diagnostic (n_eff or ESS) and an interpretation of the results
-
-
-## Posterior predictive checking and interpretation of the results
-
-## Model comparison and interpretation of the results
-
-## Predictive performance assessment (classification)
-
-## Prior sensitivity analysis (alternative prior tested)
-
-## Discussion of problems and further improvements
-
-
 \newpage
 # Packages
 ```{r setup, include=FALSE}
@@ -123,16 +98,10 @@ Load data
 file.name <- './data/heart_failure_clinical_records_dataset.csv'
 heart <- read_csv(file.name)
 ```
-Data preprocessing - Age Bins
 
-```{r}
-heart$age[heart$age<=55] = 0
-heart$age[heart$age>55 & heart$age<70] = 1
-heart$age[heart$age>=70] = 2
-hist(heart$age)
-```
+# Data preprocessing and visualization
 
-Plot histograms
+## Plot histograms
 
 ```{r}
 ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(sex)), bins = 30) + labs(fill = "Sex")
@@ -149,9 +118,7 @@ ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DE
 
 ```
 
-Plot individual 
-
-Correlation matrix
+## Correlation matrix
 
 ```{r}
 pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia") 
@@ -163,9 +130,23 @@ x = cor(heart[, c(target,pred)])
 corrplot(x)
 ```
 
+## General functions
+For testing purposes
 ```{r}
+predict.pointwise.accuracy <- function(fitted.model, test.data) {
+  preds <- round(predict(fitted.model, newdata = test.data)[,1])
+  preds.correct <- preds == test.data$DEATH_EVENT
+
+  pointwise.accuracy <- length(preds.correct[preds.correct == TRUE])/nrow(test.data)
+  
+  return(pointwise.accuracy)
+}
 ```
-# BRMS modeling
+
+
+# Models
+
+We chose to use BRMS for modeling, due to ...
 
 In BRMS modeling, the parameters are said to either be population level or group level. Population level probably means the same thing as regular parameters in our course, and group level equals hyper parameters (?????????????????)
 
@@ -181,80 +162,54 @@ train.data <- heart[train.indice,]
 test.data <- heart[-train.indice,]
 ```
 
+## Prior choices 
+
+The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.
+
+## WIP: Model fitting
+### Full model
+
+Full model includes all the parameters that are specified in the dataset. 
+
 ```{r}
-# Fit model based on age
-fitFeatSel <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium,
+fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
            data = train.data,
            family = bernoulli(),
-           prior = set_prior('normal(0, 1000)'),
            refresh=0
 )
 ```
-Analyze stan code
-```{r}
-summary(fitFeatSel)
-stancode(fitFeatSel)
-```
-Predict survival
-```{r}
-predsFeatSel <- round(predict(fitFeatSel, newdata = test.data)[,1])
-predsFeatSel.corr <- predsFeatSel == test.data$DEATH_EVENT
 
-accFeatSel <- length(predsFeatSel.corr[predsFeatSel.corr == TRUE])/nrow(test.data)
-accFeatSel
+### Feature selected model
 
-looFeatSel<-loo(fitFeatSel)
-hist(looFeatSel$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
-     ylab = "Frequency", freq = FALSE)
-
-pp_check(fitFeatSel, newdata = test.data)
-```
-
-Full model 
+In feature selected model, we hand pick the features that seems to be the most promising with regards to fitting the model. As described above, we saw that ejection_fraction, serum_creatinine, serum_sodium and age were correlating highly to death. 
 
 ```{r}
-fitFull <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
-           data = train.data,
-           family = bernoulli(),
-           prior = set_prior('normal(50, 1000)'),
-           refresh=0
-)
+fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
+                            data = train.data,
+                            family = bernoulli(),
+                            refresh = 0)
 
-predsFull <- round(predict(fitFull, newdata = test.data)[,1])
-predFull.corr <- predsFull == test.data$DEATH_EVENT
-
-accFull <- length(predFull.corr[predFull.corr == TRUE])/nrow(test.data)
-accFull
-
-looFull<-loo(fitFull)
-hist(looFull$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
-     ylab = "Frequency", freq = FALSE)
-
-summary(fitFull)
-stancode(fitFull)
-
-pp_check(fitFull, newdata = test.data)
 ```
 
 
+
+### Hierarchical model
+
+In hierarchical model, we choose age and sex as hyperparameters.  
+
+First we will discretize age data in to 3 equal depth bins.
+Data preprocessing - Age Bins
+
 ```{r}
-#NON LINEAR 
-fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium), data = train.data, family = "gaussian", refresh=0)
-
-summary(fitNonLinear)
-stancode(fitNonLinear)
-
-looNL<-loo(fitNonLinear)
-hist(looNL$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
-     ylab = "Frequency", freq = FALSE)
-
-pp_check(fitNonLinear, newdata = test.data)
+heart$age[heart$age<=55] = 0
+heart$age[heart$age>55 & heart$age<70] = 1
+heart$age[heart$age>=70] = 2
+hist(heart$age)
 ```
 
-First try with Hierarchical model
-
+Then we can fit the model
 ```{r}
-fitHier <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
+fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
            data = train.data,
            family = bernoulli(),
            prior = set_prior('normal(0, 1000)'),
@@ -263,23 +218,59 @@ fitHier <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + se
            save_all_pars=T,
            save_pars=save_pars(all = T)
 )
+```
 
-summary(fitHier)
+## $\hat{R}$ convergence 
 
-looHier<-loo(fitHier, moment_match = TRUE)
-looHier
+## HMC specific convergence diagnostics (divergences, tree depth) with interpretation of the results
 
-predsHier <- round(predict(fitHier, newdata = test.data)[,1])
-predsHier.corr <- predsHier == test.data$DEATH_EVENT
 
-accHier <- length(predsHier.corr[predsHier.corr == TRUE])/nrow(test.data)
-accHier
+## Effective sample size diagnostic (n_eff or ESS) and an interpretation of the results
 
-hist(looHier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+
+## Posterior predictive checking and interpretation of the results
+
+## Model comparison and interpretation of the results
+
+## WIP: Predictive performance assessment (classification)
+
+### Full model
+
+```{r}
+loo.full <-loo(fit.full)
+
+hist(loo.full$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency", freq = FALSE)
+```
+
+### Feature selected model
+
+```{r}
+loo.feature_selected <-loo(fit.feature_selected)
+
+hist(loo.feature_selected$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency", freq = FALSE)
+```
+
+### Hierarchical model
+```{r}
+loo.hier <- loo(fit.hierarchical)
+
+hist(loo.hier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
      ylab = "Frequency",
      freq = FALSE)
+```
 
-pp_check(fitHier, newdata = test.data)
+## Prior sensitivity analysis (alternative prior tested)
+
+## Discussion of problems and further improvements
+
+
+
+NON-LINEAR SCRAP CODE:
+```{r}
+#NON LINEAR 
+fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium), data = train.data, family = "gaussian", refresh=0)
 ```
 
 # Conclusion
