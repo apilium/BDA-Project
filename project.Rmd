@@ -1,5 +1,5 @@
 ---
-title: "ProjectFirst"
+title: "Heart Failure Prediction using Bayesian Approach"
 author: "Teemu Sormunen, Abdullah Günay, Nicola Brazzale"
 date: "11/18/2020"
 header-includes:
