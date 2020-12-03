@@ -99,8 +99,9 @@ file.name <- './data/heart_failure_clinical_records_dataset.csv'
 heart <- read_csv(file.name)
 ```
 
-# Data
-Plot histograms
+# Data preprocessing and visualization
+
+## Plot histograms
 
 ```{r}
 ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(sex)), bins = 30) + labs(fill = "Sex")
@@ -117,9 +118,7 @@ ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DE
 
 ```
 
-Plot individual 
-
-Correlation matrix
+## Correlation matrix
 
 ```{r}
 pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia") 
@@ -130,6 +129,20 @@ n <- nrow(heart)
 x = cor(heart[, c(target,pred)]) 
 corrplot(x)
 ```
+
+## General functions
+For testing purposes
+```{r}
+predict.pointwise.accuracy <- function(fitted.model, test.data) {
+  preds <- round(predict(fitted.model, newdata = test.data)[,1])
+  preds.correct <- preds == test.data$DEATH_EVENT
+
+  pointwise.accuracy <- length(preds.correct[preds.correct == TRUE])/nrow(test.data)
+  
+  return(pointwise.accuracy)
+}
+```
+
 
 # Models
 
@@ -153,8 +166,8 @@ test.data <- heart[-train.indice,]
 
 The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.
 
-## Model fitting
-### WIP: Full model
+## WIP: Model fitting
+### Full model
 
 Full model includes all the parameters that are specified in the dataset. 
 
@@ -166,7 +179,7 @@ fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatini
 )
 ```
 
-### WIP: Feature selected model
+### Feature selected model
 
 In feature selected model, we hand pick the features that seems to be the most promising with regards to fitting the model. As described above, we saw that ejection_fraction, serum_creatinine, serum_sodium and age were correlating highly to death. 
 
@@ -180,7 +193,7 @@ fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_cr
 
 
 
-### WIP: Hierarchical model
+### Hierarchical model
 
 In hierarchical model, we choose age and sex as hyperparameters.  
 
@@ -219,118 +232,45 @@ fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creati
 
 ## Model comparison and interpretation of the results
 
-## Predictive performance assessment (classification)
+## WIP: Predictive performance assessment (classification)
+
+### Full model
+
+```{r}
+loo.full <-loo(fit.full)
+
+hist(loo.full$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency", freq = FALSE)
+```
+
+### Feature selected model
+
+```{r}
+loo.feature_selected <-loo(fit.feature_selected)
+
+hist(loo.feature_selected$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency", freq = FALSE)
+```
+
+### Hierarchical model
+```{r}
+loo.hier <- loo(fit.hierarchical)
+
+hist(loo.hier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+     ylab = "Frequency",
+     freq = FALSE)
+```
 
 ## Prior sensitivity analysis (alternative prior tested)
 
 ## Discussion of problems and further improvements
 
 
-Plot histograms
-
-```{r}
-ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(sex)), bins = 30) + labs(fill = "Sex")
-
-ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
-
-ggplot(heart, aes(x=creatinine_phosphokinase)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
-
-ggplot(heart, aes(x=ejection_fraction)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
-
-ggplot(heart, aes(x=platelets)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
-
-ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
-
-```
-
-Plot individual 
-
-Correlation matrix
-
-```{r}
-pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia") 
-target <- c("DEATH_EVENT")
-#formula <- paste("DEATH_EVENT ~", paste(pred, collapse = "+"))
-p <- length(pred)
-n <- nrow(heart)
-x = cor(heart[, c(target,pred)]) 
-corrplot(x)
-```
-
-# BRMS modeling
-
-
-
-Predict survival
-```{r}
-predsFeatSel <- round(predict(fitFeatSel, newdata = test.data)[,1])
-predsFeatSel.corr <- predsFeatSel == test.data$DEATH_EVENT
-
-accFeatSel <- length(predsFeatSel.corr[predsFeatSel.corr == TRUE])/nrow(test.data)
-accFeatSel
-
-looFeatSel<-loo(fitFeatSel)
-hist(looFeatSel$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
-     ylab = "Frequency", freq = FALSE)
-
-pp_check(fitFeatSel, newdata = test.data)
-```
-
-Full model: SCRAP CODE
-
-```{r}
-
-
-predsFull <- round(predict(fitFull, newdata = test.data)[,1])
-predFull.corr <- predsFull == test.data$DEATH_EVENT
-
-accFull <- length(predFull.corr[predFull.corr == TRUE])/nrow(test.data)
-accFull
-
-looFull<-loo(fitFull)
-hist(looFull$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
-     ylab = "Frequency", freq = FALSE)
-
-summary(fitFull)
-stancode(fitFull)
-
-pp_check(fitFull, newdata = test.data)
-```
 
 NON-LINEAR SCRAP CODE:
 ```{r}
 #NON LINEAR 
 fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium), data = train.data, family = "gaussian", refresh=0)
-
-summary(fitNonLinear)
-stancode(fitNonLinear)
-
-looNL<-loo(fitNonLinear)
-hist(looNL$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
-     ylab = "Frequency", freq = FALSE)
-
-pp_check(fitNonLinear, newdata = test.data)
-```
-
-HIERARCHICAL: Scrap code left from previous implementation
-
-```{r}
-summary(fitHier)
-
-looHier<-loo(fitHier, moment_match = TRUE)
-looHier
-
-predsHier <- round(predict(fitHier, newdata = test.data)[,1])
-predsHier.corr <- predsHier == test.data$DEATH_EVENT
-
-accHier <- length(predsHier.corr[predsHier.corr == TRUE])/nrow(test.data)
-accHier
-
-hist(looHier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
-     ylab = "Frequency",
-     freq = FALSE)
-
-pp_check(fitHier, newdata = test.data)
 ```
 
 # Conclusion
