@@ -174,6 +174,10 @@ The types of priors we considered in this project are uniformative priors and re
 By default BRMS uses improper flat prior over the reals for population level parameters. Group level parameter is assumed to come from multivariate normal distribution with zero mean and unknown covariance matrix. 
 
 ## Model fitting
+
+The Generalised Linear Model used for every parametrisation is Bernoulli-Logit Generalised Linear Model, which is logistic regression. It's expressed in mathematical terms as following:  
+$BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | logit^{-1}(\alpha_i + x_i\times \beta))$
+
 ### Full model
 
 Stan code for full model can be found in Appendix A.  
@@ -284,6 +288,10 @@ fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creat
 ```
 
 # Conclusion
+
+# Self-reflection
+
+As a group we have learned...
 
 \newpage
 # Appendix {-}
