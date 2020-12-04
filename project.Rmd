@@ -186,6 +186,8 @@ In BRMS modeling, the parameters are said to either be population level or group
 **Family argument** specifies the distribution family of the response variable.    
 
 **Prior argument** for each of the parameters. One can set different priors for each population level parameter, or group level parameter.
+
+Create general function for splitting the train and test data.
 ```{r}
 split.train.test <- function(data, test.size = 0.3) {
   train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
@@ -200,7 +202,7 @@ test.data <- new.data$test
 
 ## Model fitting
 
-The Generalised Linear Model used for every parametrisation is Bernoulli-Logit Generalised Linear Model, which is logistic regression. It's expressed in mathematical terms as following:  
+The Generalised Linear Model used for every parametrisation is Bernoulli-Logit Generalised Linear Model for the first three models, which is logistic regression. It's expressed in mathematical terms as following:  
 $BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | logit^{-1}(\alpha_i + x_i\times \beta))$
 
 
@@ -211,6 +213,14 @@ Full model includes all the parameters that are specified in the dataset.
 
 ```{r}
 fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
+                prior = c(set_prior("normal(0,50)", class="b", coef="age"),
+                          set_prior("normal(0,100)", class="b", coef="serum_creatinine"),
+                          set_prior("normal(0,100)", class="b", coef="ejection_fraction"),
+                          set_prior("normal(0,1000)", class="b", coef="serum_sodium"),
+                          set_prior("normal(.5, .5)", class="b", coef="anaemia"),
+                          set_prior("normal(.5, .5)", class="b", coef="diabetes"),
+                          set_prior("normal(.5, .5)", class="b", coef="smoking"),
+                          set_prior("normal(.5, .5)", class="b", coef="high_blood_pressure")),
            data = train.data,
            family = bernoulli(),
            refresh=0
@@ -221,7 +231,7 @@ fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatini
 
 Stan code for feature selected model can be found in Appendix B.  
 
-In feature selected model, we hand pick the features that seems to be the most promising with regards to fitting the model. As described above, we saw that ejection_fraction, serum_creatinine, serum_sodium and age were correlating highly to death.  
+In feature selected model, we hand pick the features that seems to be the most promising with regards to fitting the model. As described above in correlation analysis, we saw that ejection_fraction, serum_creatinine, serum_sodium and age were correlating to death.  
 
 Based on this we can choose these variables to be the important ones, and build a model with them.
 
@@ -238,7 +248,10 @@ fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_cr
 
 Stan code for hierarchical model can be found in Appendix C.  
 
-In hierarchical model, we choose age as hyperparameter.  
+In hierarchical model, we choose age as hyperparameter, because by intuition we thought that different aged people tend to have different medical conditions by default. This intuition is supported by calculating the absolute row sums of the correlation matrix rows, and seeing absolute correlations of variables. 
+```{r}
+sort(rowSums(abs(x)))
+```
 First we will discretize age data in to 3 equal depth bins.
 
 
@@ -258,10 +271,7 @@ Then we can fit the model
 fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
            data = train.data,
            family = bernoulli(),
-           refresh=0,
-           control = list(adapt_delta = 0.99),
-           save_all_pars=T,
-           save_pars=save_pars(all = T)
+           refresh=0
 )
 ```
 
@@ -291,7 +301,14 @@ fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ high_blood_pressure + ag
 
 ## Prior choices 
 
-The types of priors we considered in this project are uninformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.  
+We chose priors based on articles that we read about medical measurements. We used really weakly informative priors, but all the priors were based on what 
+```{r}
+prs <- prior_summary(brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
+           data = train.data,
+           family = bernoulli()))
+```
+
+The types of priors we considered in this project are uninformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors. The domain is also highly specialized, as the target group is specific group of people over 40 years who have gone through ventricular systolic dysfunction. We can't simply infer any prior knowledge on this group. 
 
 By default BRMS uses improper flat prior over the reals for population level parameters. Group level parameter is assumed to come from multivariate normal distribution with zero mean and unknown covariance matrix. 
 
@@ -335,7 +352,21 @@ From the model summaries, it is observable that $\hat{R}$ values for all models 
 
 ## WIP: Predictive performance assessment (classification)
 
+Function for predicting pointwise accuracy
+```{r}
+predict.pointwise.accuracy <- function(fitted.model, test.data) {
+  preds <- round(predict(fitted.model, newdata = test.data)[,1])
+  preds.correct <- preds == test.data$DEATH_EVENT
+
+  pointwise.accuracy <- length(preds.correct[preds.correct == TRUE])/nrow(test.data)
+  
+  return(pointwise.accuracy)
+}
+```
+
 ### Full model
+
+
 
 ```{r}
 loo.full <-loo(fit.full)
