@@ -193,6 +193,11 @@ In BRMS modeling, the parameters are said to either be population level or group
 
 **Prior argument** for each of the parameters. One can set different priors for each population level parameter, or group level parameter.
 
+Before creating the test/train datasets, we need to preprocess the data little bit. Ejection fraction is described as percentage, and it can be given prior with beta distribution, which is constrained from 0 to 1. Let's normalize ejection fraction to be from 0 to 1.
+```{r}
+heart$ejection_fraction = heart$ejection_fraction / 100
+```
+
 Create general function for splitting the train and test data.
 ```{r}
 split.train.test <- function(data, test.size = 0.3) {
@@ -219,10 +224,10 @@ Full model includes all the parameters that are specified in the dataset.
 
 ```{r}
 fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
-                prior = c(set_prior("normal(0,50)", class="b", coef="age"),
-                          set_prior("normal(0,100)", class="b", coef="serum_creatinine"),
-                          set_prior("normal(0,100)", class="b", coef="ejection_fraction"),
-                          set_prior("normal(0,1000)", class="b", coef="serum_sodium"),
+                prior = c(set_prior("rayleigh(40)", class="b", coef="age"),
+                          set_prior("inv_gamma(1,5)", class="b", coef="serum_creatinine"),
+                          set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
+                          set_prior("cauchy(0,200)", class="b", coef="serum_sodium"),
                           set_prior("normal(.5, .5)", class="b", coef="anaemia"),
                           set_prior("normal(.5, .5)", class="b", coef="diabetes"),
                           set_prior("normal(.5, .5)", class="b", coef="smoking"),
@@ -245,10 +250,10 @@ Based on this we can choose these variables to be the important ones, and build 
 fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
                             data = train.data,
                             family = bernoulli(),
-                          prior = c(set_prior("normal(0,50)", class="b", coef="age"),
-                            set_prior("normal(0,100)", class="b", coef="serum_creatinine"),
-                            set_prior("normal(0,100)", class="b", coef="ejection_fraction"),
-                            set_prior("normal(0,1000)", class="b", coef="serum_sodium")),
+                          prior = c(set_prior("rayleigh(40)", class="b", coef="age"),
+                          set_prior("inv_gamma(1,1)", class="b", coef="serum_creatinine"),
+                          set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
+                          set_prior("cauchy(0,200)", class="b", coef="serum_sodium")),
                             refresh = 0
                             )
 ```
@@ -281,9 +286,9 @@ Then we can fit the model
 fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
            data = train.data,
            family = bernoulli(),
-           c(set_prior("normal(0,100)", class="b", coef="serum_creatinine"),
-              set_prior("normal(0,100)", class="b", coef="ejection_fraction"),
-              set_prior("normal(0,1000)", class="b", coef="serum_sodium")),
+           c(set_prior("rayleigh(40)", class="b", coef="serum_creatinine"),
+                          set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
+                          set_prior("cauchy(0,200)", class="b", coef="serum_sodium")),
            refresh=0
 )
 ```
@@ -314,12 +319,23 @@ fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ high_blood_pressure + ag
 
 ## Prior choices 
 
-We chose priors based on articles that we read about medical measurements. We used really weakly informative priors, but all the priors were based on what 
-```{r}
-prs <- prior_summary(brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia,
-           data = train.data,
-           family = bernoulli()))
-```
+We chose priors based on articles that we read about medical measurements. We used weakly informative priors, because there's only little indication in what type of prior we should use. 
+
+### First models
+
+Same priors were used more or less to every of first 3 models, and we will specify them here.  
+Age distribution is using rayleigh distribution, which fits our population well. Rayleigh is non-negative continuous distribution, which peaks at around 40, and decades to over 120. This is good, because it forces the prior to be non-negative, which is a must in age distribution. Also it centers around 40, which is convenient, because our age started from 40. 
+$age \sim Rayleigh(y|\sigma)=\dfrac{y}{\sigma^2}exp(-y^2/2\sigma^2)$
+
+Serum creatinine used inverse gamma distribution. Creatinine levels also need non-negative distribution, and the normal level should be between 0.9 and 1.3. Severe symptoms start when creatinine reaches over 5, so we don't restrict the tail.
+$\text{serum creatinine} \sim InvGamma(y|\alpha, \beta) = \dfrac{\beta^{\alpha}}{\Gamma(\alpha)}y^{-(\alpha + 1)}exp\left(-\beta \dfrac{1}{y}\right)$
+
+Ejection fraction is constrained to be from 0 to 100, as its expressed in percentage. For this reason we need to use beta distribution. We chose to parametrize beta distribution as (6,4), because the ejection fraction should be between 50 and 60. (6,4) parametrization provides us mean of 0.6.
+$\text{ejection fraction} \sim Beta(y|\alpha, \beta) \dfrac{1}{B(\alpha, \beta)}\theta^{\alpha - 1}(1-\theta)^{\beta-1}$
+
+Serum sodium should be around 135 and 145, but we gave it large variance with (half) cauchy(0,200). Severe symptoms of too high sodium levels start above 160, so this prior gives a lot room to reach fatal levels. 
+$\text{serum sodium} \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$
+
 
 The types of priors we considered in this project are uninformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors. The domain is also highly specialized, as the target group is specific group of people over 40 years who have gone through ventricular systolic dysfunction. We can't simply infer any prior knowledge on this group. 
 
