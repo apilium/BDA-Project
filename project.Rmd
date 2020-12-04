@@ -42,9 +42,12 @@ With this project we aim to estimate death events and the major risk factors for
 
 ## Modeling idea
 
-We created 3 models which are then compared based on $\hat{r}$, $n_{eff}$, using the loo package and the classification accuracy. 
-The 1st model is the reduced model and consists in fewer varibles which are selected base on their corrolection with the death event. The 2nd model consists in all varibles except for the varibale "time" as we believe that doens't represent an important factor in the death event scenario. The 3rd model used is a hierarchical model where we treated age class patients in a group with respect to the other selected variables. The 4th model is a non-linear model, as the hierarchical one we took in considertion only the selected varibales in the first model.
-Modeling is done with package brms, which is a interface for non-linear multivariate multilevel models in Stan.
+We created 4 models which are then compared based on $\hat{r}$, $n_{eff}$, using the loo package and the classification accuracy. The three first models ignore the time feature, and simply predict whether patient has died (1) during the experiment duration, or survived (0). We chose this approach to practise survival analysis with binary outcome.  
+We also created fourth model, which predicts the time with respect to death event. In this case, the death event 1 means the patient has died, and death event 0 means that the patient is censored from the study. Censoring practically means, that the patient has opted out of the study, and the researches couldn't reach him anymore. In this context, it doesn't necessarily mean that the patient has survived, but we just don't know the outcome.  
+
+The 1st model is the reduced model and consists in fewer varibles which are selected base on their correlation with the death event. The 2nd model consists in all variables except for the variable "time" as we believe that doesn't represent an important factor in the death event scenario. The 3rd model used is a hierarchical model where we treated age class patients in a group with respect to the other selected variables. 
+
+The 4th model is similar type of linear model, but this time we consider time as outcome variable with respect to death event. We use correlation matrix to select the strongest variable that correspond with time, and we also use BRMS internal function cens() for taking the censored variable DEATH_EVENT to consideration. More clear explanation is given later.  
 
 # Dataset
 
@@ -163,11 +166,15 @@ Brms example, investigate results based on age.
 
 **Prior argument** for each of the parameters, in this case only age. One can set different priors for each population level parameter, or group level parameter.
 ```{r}
-# Split test and train data
-test.size <- 0.3
-train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
-train.data <- heart[train.indice,]
-test.data <- heart[-train.indice,]
+split.train.test <- function(data, test.size = 0.3) {
+  train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
+  train.data <- heart[train.indice,]
+  test.data <- heart[-train.indice,]
+  return(list("train" = train.data, "test" = test.data))
+}
+new.data <- split.train.test(heart)
+train.data <- new.data$train
+test.data <- new.data$test
 ```
 
 ## Prior choices 
@@ -195,11 +202,13 @@ fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatini
 )
 ```
 
-### WIP: Feature selected model
+### Feature selected model
 
 Stan code for feature selected model can be found in Appendix B.  
 
-In feature selected model, we hand pick the features that seems to be the most promising with regards to fitting the model. As described above, we saw that ejection_fraction, serum_creatinine, serum_sodium and age were correlating highly to death. 
+In feature selected model, we hand pick the features that seems to be the most promising with regards to fitting the model. As described above, we saw that ejection_fraction, serum_creatinine, serum_sodium and age were correlating highly to death.  
+
+Based on this we can choose these variables to be the important ones, and build a model with them.
 
 ```{r}
 fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
@@ -210,20 +219,23 @@ fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_cr
 ```
 
 
-
 ### Hierarchical model
 
 Stan code for hierarchical model can be found in Appendix C.  
 
 In hierarchical model, we choose age as hyperparameter.  
-First we will discretize age data in to 3 equal depth bins.  
-Doing
+First we will discretize age data in to 3 equal depth bins.
+
 
 ```{r}
-heart$age[heart$age<=55] = 0
-heart$age[heart$age>55 & heart$age<70] = 1
-heart$age[heart$age>=70] = 2
-hist(heart$age)
+test.data$age[test.data$age<=55] = 0
+test.data$age[test.data$age>55 & test.data$age<70] = 1
+test.data$age[test.data$age>=70] = 2
+
+train.data$age[train.data$age<=55] = 0
+train.data$age[train.data$age>55 & train.data$age<70] = 1
+train.data$age[train.data$age>=70] = 2
+hist(c(train.data$age, test.data$age))
 ```
 
 Then we can fit the model
@@ -238,8 +250,20 @@ fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creati
 )
 ```
 
+
 ### Model for death time analysis
-As a fourth model we have model with response variable according to Weibull distribution, and features are selected based on correlation matrix.
+As a fourth model we have model with response variable according to Weibull distribution, and features are selected based on correlation matrix.  
+In death time analysis model we are using different functions based on whether sample is censored or not. If sample is censored, then we are using log probability density function  
+$Weibull(y|\alpha, \sigma) = \dfrac{\alpha}{\sigma}\left(\dfrac{y}{\sigma}\right)^{-\alpha-1}exp\left(-\left(\dfrac{y}{\sigma}\right)^{\alpha}\right)$.
+If sample is not censored, then we are using the cumulative function of previously mentioned probability density function.  
+First we need to retrieve the original data with original age values
+```{r}
+new.data <- split.train.test(heart)
+train.data <- new.data$train
+test.data <- new.data$test
+```
+
+Then we can fit the model
 ```{r}
 fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ high_blood_pressure + age + serum_creatinine + serum_sodium,
            data = train.data,
@@ -315,6 +339,8 @@ hist(loo.hier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  
      freq = FALSE)
 ```
 
+### 
+
 ## Prior sensitivity analysis (alternative prior tested)
 
 ## Discussion of problems and further improvements
@@ -351,6 +377,12 @@ stancode(fit.feature_selected)
 ## C. Stan hierarhical model {-}
 ```{r}
 stancode(fit.hierarchical)
+```
+
+\newpage
+## D. Stan death time analysis model
+```{r}
+stancode(fit.weibull)
 ```
 
 \newpage
