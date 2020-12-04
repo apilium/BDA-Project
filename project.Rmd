@@ -416,7 +416,7 @@ check_treedepth(fit.weibull$fit)
 
 ### Feature selected model
 ```{r}
-summary(fit.feature_selected)
+s<-summary(fit.feature_selected)
 s[["fixed"]][,6:7]
 ```
 
@@ -493,6 +493,12 @@ loo.weibull <- loo(fit.weibull)
 hist(loo.weibull$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values",
      ylab = "Frequency",
      freq = FALSE)
+```
+
+Model comparison: 
+
+```{r}
+loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical, loo.loo.weibull))
 ```
 
 ## WIP: Predictive performance assessment (classification)
