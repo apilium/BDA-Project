@@ -93,6 +93,7 @@ library(corrplot)
 library(brms)
 library(rstanarm)
 library(loo)
+library(bayesplot)
 ```
 
 Load data
@@ -171,7 +172,7 @@ test.data <- heart[-train.indice,]
 
 ## Prior choices 
 
-The types of priors we considered in this project are uniformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.  
+The types of priors we considered in this project are uninformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.  
 
 By default BRMS uses improper flat prior over the reals for population level parameters. Group level parameter is assumed to come from multivariate normal distribution with zero mean and unknown covariance matrix. 
 
@@ -248,6 +249,32 @@ fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ high_blood_pressure + ag
 ```
 
 ## $\hat{R}$ convergence 
+
+### Summary for the linear model with all variables 
+```{r}
+rhats <- rhat(fit.full)
+color_scheme_set("brightblue") # see help("color_scheme_set")
+mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for model with all variables") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+### Summary for the linear model with selected variables 
+
+```{r}
+rhats <- rhat(fit.feature_selected)
+color_scheme_set("brightblue") # see help("color_scheme_set")
+mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for model with selected variables") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Summary for the hierarchical model with all variables 
+```{r}
+rhats <- rhat(fit.hierarchical)
+color_scheme_set("brightblue") # see help("color_scheme_set")
+mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for hierarchical model with all variables") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+From the model summaries, it is observable that $\hat{R}$ values for all models are around 1.0 which is below the threshold value of 1.05 as mentioned in Stan documentation. With this information, we can interpret that the chains have mixed well and the samples are reliable.
+
 
 ## HMC specific convergence diagnostics (divergences, tree depth) with interpretation of the results
 
