@@ -239,6 +239,10 @@ Based on this we can choose these variables to be the important ones, and build 
 fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
                             data = train.data,
                             family = bernoulli(),
+                          prior = c(set_prior("normal(0,50)", class="b", coef="age"),
+                            set_prior("normal(0,100)", class="b", coef="serum_creatinine"),
+                            set_prior("normal(0,100)", class="b", coef="ejection_fraction"),
+                            set_prior("normal(0,1000)", class="b", coef="serum_sodium")),
                             refresh = 0
                             )
 ```
@@ -271,6 +275,9 @@ Then we can fit the model
 fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
            data = train.data,
            family = bernoulli(),
+           c(set_prior("normal(0,100)", class="b", coef="serum_creatinine"),
+              set_prior("normal(0,100)", class="b", coef="ejection_fraction"),
+              set_prior("normal(0,1000)", class="b", coef="serum_sodium")),
            refresh=0
 )
 ```
