@@ -33,6 +33,9 @@ In this project we analyse the data from Heart desease dataset [@origpaper]. We 
 • Prior sensitivity analysis
 • Discussion and conclusion
 
+In this project, we are observing the dataset from two distinct point of views.
+On the other hand, we want to do predictive analysis whether patient dies, or survives the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. For this reason we are inspecting the variables from two points. More about this in upcoming chapters.
+
 ## The problem
 Cardiovascular Heart Disease (CHD) is the top reason causing 31% of deaths globally. Pakistan is one of the countries where CHD is increasing significantly, and previous studies do not directly apply to Pakistani area due to different diet patterns.
 [@origpaper]
@@ -78,14 +81,16 @@ Normal level of creatinine range from 0.9 to 1.3 mg/dL in men and 0.6 to 1.1 mg/
 Serum sodium measures the amount of sodium in blood. Sodium enters blood through food and drink, and leaves by urine, stool and sweat. Too much sodium can cause blood pressure, while too little sodium can cause nausea, vomiting, exhaustion or dizziness.  
 Normal levels of serum sodium are 135 to 145 mEq/L, according to Mayo Clinic. There are however different interpretations of "normal".[@sodium]
 
+* **Time**
+Time variable indicates the time since the research has started for that person (the time of ventricular systolic dysfunction). We have time variable included, because we have to inspect when the death events are happening. This variable is ignored in the first three models, because we wanted to also interpret this dataset from binary survival approach, so predict whether patient dies or not.  
+
+
 ## Dataset introduction
 
-The dataset of 299 patients was produced as a result of study [@origpaper] from Pakistani's city Faisalabad. All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction.
+The dataset of 299 patients was produced as a result of study [@origpaper] from Pakistani's city Faisalabad. All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction. The follow up period was 4 to 285 days, with average of 130 days. This has to be taken in to consideration when doing the survival analysis.  
 The dataset has 105 women, and 194 men.
 EF, serum creatinine and platelets are categorical variables, and age, serum sodium and CPK are continuous variables.  
 Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.  
-
-We decided to treat DEATH_EVENT as binary variable, indicating whether patient has died or stayed alive for the duration of the study period. For this purpose we ignored time variable completely. However, we also wanted to try survival analysis with respect to the timestamp, and using DEATH_EVENT as censoring variable, so we implemented a fourth model. 
  
 \newpage
 # Packages
@@ -114,17 +119,34 @@ opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 
 ## Plot histograms
 
+We are first plotting the histograms to get an overview of the dataset.  
+
+It seems like the sex between ages is distributed quite evenly, there's slightly more patients from the 50-60.
+
 ```{r}
 ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(sex)), bins = 30) + labs(fill = "Sex")
+```
 
+This histogram might suggest us that older people die during this follow up period with higher probability, and younger people either survive or opt-out of the study. 
+```{r}
 ggplot(heart, aes(x=age)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
+```
 
+Creatinine phosphokinase doesn't bring too much information based on the histogram, although it shows us that people with high creatinine phosphokinase might tend to die more often. Because almost everyone who attended this study had already increased phosphokinase levels, we should take this interpretation with a slight grain of salt. 
+```{r}
 ggplot(heart, aes(x=creatinine_phosphokinase)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
+```
 
+Ejection fraction seems to correlate strongly with death. This is logical, because ejection fraction measures the hearts ability to pump blood. Here we can again see that most of the people fall under normal levels of EF.
+```{r}
 ggplot(heart, aes(x=ejection_fraction)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
-
+```
+Platelets seems to follow quite even distribution with respect to death event, and there isn't too much information available only based on the histogram.
+```{r}
 ggplot(heart, aes(x=platelets)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
-
+```
+Serum creatinine seems to correlate quite highly with death. When the upper bound for serum creatinine 1.3 is passed, it seems that probability for death becomes high.
+```{r}
 ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DEATH_EVENT)), bins = 30) + labs(fill = "Death")
 
 ```
