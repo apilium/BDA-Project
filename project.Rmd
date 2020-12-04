@@ -103,6 +103,7 @@ library(brms)
 library(rstanarm)
 library(loo)
 library(bayesplot)
+library(rstan)
 ```
 
 Load data
@@ -378,7 +379,7 @@ check_divergences(fit.feature_selected$fit)
 ```
 
 ```{r}
-check_depthtree(fit.feature_selected$fit)
+check_treedepth(fit.feature_selected$fit)
 ```
 
 ### Full model 
@@ -388,7 +389,7 @@ check_divergences(fit.full$fit)
 ```
 
 ```{r}
-check_depthtree(fit.full$fit)
+check_treedepth(fit.full$fit)
 ```
 
 ### Hierarchical model
@@ -398,7 +399,7 @@ check_divergences(fit.hierarchical$fit)
 ```
 
 ```{r}
-check_depthtree(fit.hierarchical$fit)
+check_treedepth(fit.hierarchical$fit)
 ```
 
 ### Weibull model
@@ -408,7 +409,7 @@ check_divergences(fit.weibull$fit)
 ```
 
 ```{r}
-check_depthtree(fit.weibull$fit)
+check_treedepth(fit.weibull$fit)
 ```
 
 ## Effective sample size diagnostic (n_eff or ESS) and an interpretation of the results
