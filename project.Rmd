@@ -80,8 +80,10 @@ Normal levels of serum sodium are 135 to 145 mEq/L, according to Mayo Clinic. Th
 The dataset of 299 patients was produced as a result of study [@origpaper] from Pakistani's city Faisalabad. All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction.
 The dataset has 105 women, and 194 men.
 EF, serum creatinine and platelets are categorical variables, and age, serum sodium and CPK are continuous variables.  
-Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.
+Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.  
 
+We decided to treat DEATH_EVENT as binary variable, indicating whether patient has died or stayed alive for the duration of the study period. For this purpose we ignored time variable completely. However, we also wanted to try survival analysis with respect to the timestamp, and using DEATH_EVENT as censoring variable, so we implemented a fourth model. 
+ 
 \newpage
 # Packages
 ```{r setup, include=FALSE}
@@ -126,7 +128,7 @@ ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DE
 ## Correlation matrix
 
 ```{r}
-pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia") 
+pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia", "time") 
 target <- c("DEATH_EVENT")
 #formula <- paste("DEATH_EVENT ~", paste(pred, collapse = "+"))
 p <- length(pred)
@@ -177,6 +179,7 @@ By default BRMS uses improper flat prior over the reals for population level par
 
 The Generalised Linear Model used for every parametrisation is Bernoulli-Logit Generalised Linear Model, which is logistic regression. It's expressed in mathematical terms as following:  
 $BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | logit^{-1}(\alpha_i + x_i\times \beta))$
+
 
 ### Full model
 
@@ -231,6 +234,16 @@ fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creati
            control = list(adapt_delta = 0.99),
            save_all_pars=T,
            save_pars=save_pars(all = T)
+)
+```
+
+### Model for death time analysis
+As a fourth model we have model with response variable according to Weibull distribution, and features are selected based on correlation matrix.
+```{r}
+fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ high_blood_pressure + age + serum_creatinine + serum_sodium,
+           data = train.data,
+           family = weibull(),
+           refresh=0
 )
 ```
 
