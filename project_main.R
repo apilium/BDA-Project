@@ -4,6 +4,7 @@ library(corrplot)
 library(brms)
 library(rstanarm)
 library(loo)
+library(rstan)
 
 heart <- read.csv(file = 'data/heart_failure_clinical_records_dataset.csv')
 head(heart)
@@ -74,6 +75,14 @@ fitFeatSel <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creati
            refresh=0
 )
 
+
+summary(fitFeatSel)
+s[["fixed"]][,6:7]
+
+#[,"n_eff"]
+
+check_hmc_diagnostics(fitFeatSel$fit)
+check_divergences(fitFeatSel$fit)
 predsFeatSel <- round(predict(fitFeatSel, newdata = test.data)[,1])
 predsFeatSel.corr <- predsFeatSel == test.data$DEATH_EVENT
 
@@ -92,15 +101,6 @@ predFull.corr <- predsFull == test.data$DEATH_EVENT
 
 accFull <- length(predFull.corr[predFull.corr == TRUE])/nrow(test.data)
 accFull
-
-#NON LINEAR 
-fit_nl <- stan_gamm4(formula = DEATH_EVENT ~ s(age) + s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium),
-           data = train.data,
-           family = "poisson",
-           refresh=0
-)
-
-summary(fit_nl)
 
 fit_nlFull <- stan_gamm4(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium) + high_blood_pressure + s(creatinine_phosphokinase) + diabetes + smoking + anaemia,
                      data = train.data,

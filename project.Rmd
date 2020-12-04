@@ -22,16 +22,17 @@ output:
 # Introduction
 
 In this project we analyse the data from Heart desease dataset [@origpaper]. We perform a Bayesian analysis of the data using this sequence of operations:
-• Overview of analysis problem and of the dataset
-• Data preprocsessing and visualisation
-• Prior choice discussion
-• Models used in our analysis
-• $\hat{R}$ convergence
-• HMC specific convergence diagnostics
-• Effective sample size diagnostic (n_eff or ESS)
-• Model comparison
-• Prior sensitivity analysis
-• Discussion and conclusion
+
+**Overview of analysis problem and of the dataset**
+**Data preprocsessing and visualisation**
+**Prior choice discussion**
+**Models used in our analysis**
+**$\hat{R}$ convergence**
+**HMC specific convergence diagnostics**
+**Effective sample size diagnostic (n_eff or ESS)**
+**Model comparison**
+**Prior sensitivity analysis**
+**Discussion and conclusion**
 
 In this project, we are observing the dataset from two distinct point of views.
 On the other hand, we want to do predictive analysis whether patient dies, or survives the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. For this reason we are inspecting the variables from two points. More about this in upcoming chapters.
@@ -164,16 +165,21 @@ n <- nrow(heart)
 x = cor(heart[, c(target,pred)]) 
 corrplot(x)
 ```
-Looking at the correlations only by eye might not be enough, so let's list the correlations with respect to death_event in sorted order
+
+Looking at the correlations only by eye might not be enough, so let's list the correlations with respect to death_event in sorted order.
+
 ```{r}
 sort(x[1,])
 ```
+
 We see that highly positively correlating variables are age and serum creatinine, which found to be true already earlier. Strongest negative correlations are time, ejection fraction and serum sodium. Time clearly indicates that people tend to die early after the ventricular systolic dysfunction has happened. Serum sodium also seems to correlate negatively, because the low sodium levels are usually occurring after heart failure. If we have to make conclusions, then we could conclude that the sodium levels are lower in the people who have had more severe ventricular systolic dysfunction.  
 
 For the fourth survival analysis model we should also look at the highest correlations according to time. 
+
 ```{r}
 sort(x[nrow(x),])
 ```
+
 According to time we see that highest negative correlation when death_event is discarded are age, high blood pressure, serum creatinine and anemia. This means that old people tend to die early, with high blood pressure, with high serum creatinine, with anemia. This seems to somewhat run hand in hand with the previous conclusions, although this time high blood pressure and anemia was introduced. High blood pressure sounds like it could lead to heart attack easily, which makes sense. Also anemia seems to go hand in hand with heart attack.  
 
 
@@ -342,31 +348,93 @@ From the model summaries, it is observable that $\hat{R}$ values for all models 
 
 ## HMC specific convergence diagnostics (divergences, tree depth) with interpretation of the results
 
+### Feature selected model
+
+```{r}
+check_divergences(fit.feature_selected$fit)
+```
+
+```{r}
+check_depthtree(fit.feature_selected$fit)
+```
+
+### Full model 
+
+```{r}
+check_divergences(fit.full$fit)
+```
+
+```{r}
+check_depthtree(fit.full$fit)
+```
+
+### Hierarchical model
+
+```{r}
+check_divergences(fit.hierarchical$fit)
+```
+
+```{r}
+check_depthtree(fit.hierarchical$fit)
+```
+
+### Weibull model
+
+```{r}
+check_divergences(fit.weibull$fit)
+```
+
+```{r}
+check_depthtree(fit.weibull$fit)
+```
 
 ## Effective sample size diagnostic (n_eff or ESS) and an interpretation of the results
 
-
-## Posterior predictive checking and interpretation of the results
-
-## Model comparison and interpretation of the results
-
-## WIP: Predictive performance assessment (classification)
-
-Function for predicting pointwise accuracy
+### Feature selected model
 ```{r}
-predict.pointwise.accuracy <- function(fitted.model, test.data) {
-  preds <- round(predict(fitted.model, newdata = test.data)[,1])
-  preds.correct <- preds == test.data$DEATH_EVENT
-
-  pointwise.accuracy <- length(preds.correct[preds.correct == TRUE])/nrow(test.data)
-  
-  return(pointwise.accuracy)
-}
+summary(fit.feature_selected)
+s[["fixed"]][,6:7]
 ```
 
 ### Full model
+```{r}
+s<-summary(fit.full)
+s[["fixed"]][,6:7]
+```
 
+### Hierarchical model
+```{r}
+s<-summary(fit.hierarchical)
+s[["fixed"]][,6:7]
+```
 
+### Weibul model
+```{r}
+s<-summary(fit.weibull)
+s[["fixed"]][,6:7]
+```
+
+## Posterior predictive checking and interpretation of the results
+
+```{r}
+pp_check(fit.feature_selected, newdata = test.data)
+```
+
+```{r}
+pp_check(fit.full, newdata = test.data)
+```
+
+```{r}
+pp_check(fit.hierarchical, newdata = test.data)
+```
+
+```{r}
+pp_check(fit.weibull, newdata = test.data)
+```
+
+## Model comparison and interpretation of the results
+
+### Full model
 
 ```{r}
 loo.full <-loo(fit.full)
@@ -393,23 +461,39 @@ hist(loo.hier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  
      freq = FALSE)
 ```
 
+### Weibull model
+
+```{r}
+loo.weibull <- loo(fit.weibull)
+
+hist(loo.weibull$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values",
+     ylab = "Frequency",
+     freq = FALSE)
+```
+
+## WIP: Predictive performance assessment (classification)
+
+Function for predicting pointwise accuracy
+```{r}
+predict.pointwise.accuracy <- function(fitted.model, test.data) {
+  preds <- round(predict(fitted.model, newdata = test.data)[,1])
+  preds.correct <- preds == test.data$DEATH_EVENT
+
+  pointwise.accuracy <- length(preds.correct[preds.correct == TRUE])/nrow(test.data)
+  
+  return(pointwise.accuracy)
+}
+```
+
 ### 
 
 ## Prior sensitivity analysis (alternative prior tested)
 
 ## Discussion of problems and further improvements
 
-
-
-NON-LINEAR SCRAP CODE:
-```{r}
-#NON LINEAR 
-fitNonLinear <- brm(formula = DEATH_EVENT ~ s(ejection_fraction) + s(serum_creatinine) + s(serum_sodium), data = train.data, family = "gaussian", refresh=0)
-```
-
 # Conclusion
 
-# Self-reflection
+## Self-reflection
 
 As a group we have learned...
 
