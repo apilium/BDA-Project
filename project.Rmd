@@ -153,6 +153,8 @@ ggplot(heart, aes(x=serum_creatinine)) + geom_histogram(aes(fill=as.character(DE
 
 ## Correlation matrix
 
+By plotting the correlation matrix we can see the correlations.
+
 ```{r}
 pred <- c("high_blood_pressure", "age", "sex", "creatinine_phosphokinase", "diabetes", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium", "smoking", "anaemia", "time") 
 target <- c("DEATH_EVENT")
@@ -162,19 +164,17 @@ n <- nrow(heart)
 x = cor(heart[, c(target,pred)]) 
 corrplot(x)
 ```
-
-## General functions
-For testing purposes
+Looking at the correlations only by eye might not be enough, so let's list the correlations with respect to death_event in sorted order
 ```{r}
-predict.pointwise.accuracy <- function(fitted.model, test.data) {
-  preds <- round(predict(fitted.model, newdata = test.data)[,1])
-  preds.correct <- preds == test.data$DEATH_EVENT
-
-  pointwise.accuracy <- length(preds.correct[preds.correct == TRUE])/nrow(test.data)
-  
-  return(pointwise.accuracy)
-}
+sort(x[1,])
 ```
+We see that highly positively correlating variables are age and serum creatinine, which found to be true already earlier. Strongest negative correlations are time, ejection fraction and serum sodium. Time clearly indicates that people tend to die early after the ventricular systolic dysfunction has happened. Serum sodium also seems to correlate negatively, because the low sodium levels are usually occurring after heart failure. If we have to make conclusions, then we could conclude that the sodium levels are lower in the people who have had more severe ventricular systolic dysfunction.  
+
+For the fourth survival analysis model we should also look at the highest correlations according to time. 
+```{r}
+sort(x[nrow(x),])
+```
+According to time we see that highest negative correlation when death_event is discarded are age, high blood pressure, serum creatinine and anemia. This means that old people tend to die early, with high blood pressure, with high serum creatinine, with anemia. This seems to somewhat run hand in hand with the previous conclusions, although this time high blood pressure and anemia was introduced. High blood pressure sounds like it could lead to heart attack easily, which makes sense. Also anemia seems to go hand in hand with heart attack.  
 
 
 # Models
@@ -183,10 +183,9 @@ We chose to use BRMS for modeling. It stands for Bayesian Regression Models for 
 
 In BRMS modeling, the parameters are said to either be population level or group level. Population-level parameters means the same thing as regular parameters in our course, and group-level parameters mean hyperparameters in hierarchical case.  
 
-Brms example, investigate results based on age.
-**Family argument** specifies the distribution family of the output.  
+**Family argument** specifies the distribution family of the response variable.    
 
-**Prior argument** for each of the parameters, in this case only age. One can set different priors for each population level parameter, or group level parameter.
+**Prior argument** for each of the parameters. One can set different priors for each population level parameter, or group level parameter.
 ```{r}
 split.train.test <- function(data, test.size = 0.3) {
   train.indice <- sample(nrow(heart), nrow(heart)*(1-test.size))
@@ -198,12 +197,6 @@ new.data <- split.train.test(heart)
 train.data <- new.data$train
 test.data <- new.data$test
 ```
-
-## Prior choices 
-
-The types of priors we considered in this project are uninformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.  
-
-By default BRMS uses improper flat prior over the reals for population level parameters. Group level parameter is assumed to come from multivariate normal distribution with zero mean and unknown covariance matrix. 
 
 ## Model fitting
 
@@ -273,7 +266,8 @@ fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creati
 ```
 
 
-### Model for death time analysis
+### Model for death time analysis  
+
 As a fourth model we have model with response variable according to Weibull distribution, and features are selected based on correlation matrix.  
 In death time analysis model we are using different functions based on whether sample is censored or not. If sample is censored, then we are using log probability density function  
 $Weibull(y|\alpha, \sigma) = \dfrac{\alpha}{\sigma}\left(\dfrac{y}{\sigma}\right)^{-\alpha-1}exp\left(-\left(\dfrac{y}{\sigma}\right)^{\alpha}\right)$.
@@ -293,6 +287,13 @@ fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ high_blood_pressure + ag
            refresh=0
 )
 ```
+
+
+## Prior choices 
+
+The types of priors we considered in this project are uninformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors.  
+
+By default BRMS uses improper flat prior over the reals for population level parameters. Group level parameter is assumed to come from multivariate normal distribution with zero mean and unknown covariance matrix. 
 
 ## $\hat{R}$ convergence 
 
