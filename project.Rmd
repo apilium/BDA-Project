@@ -103,6 +103,7 @@ library(brms)
 library(rstanarm)
 library(loo)
 library(bayesplot)
+library(rstan)
 ```
 
 Load data
@@ -355,7 +356,7 @@ check_divergences(fit.feature_selected$fit)
 ```
 
 ```{r}
-check_depthtree(fit.feature_selected$fit)
+check_treedepth(fit.feature_selected$fit)
 ```
 
 ### Full model 
@@ -365,7 +366,7 @@ check_divergences(fit.full$fit)
 ```
 
 ```{r}
-check_depthtree(fit.full$fit)
+check_treedepth(fit.full$fit)
 ```
 
 ### Hierarchical model
@@ -375,7 +376,7 @@ check_divergences(fit.hierarchical$fit)
 ```
 
 ```{r}
-check_depthtree(fit.hierarchical$fit)
+check_treedepth(fit.hierarchical$fit)
 ```
 
 ### Weibull model
@@ -385,14 +386,14 @@ check_divergences(fit.weibull$fit)
 ```
 
 ```{r}
-check_depthtree(fit.weibull$fit)
+check_treedepth(fit.weibull$fit)
 ```
 
 ## Effective sample size diagnostic (n_eff or ESS) and an interpretation of the results
 
 ### Feature selected model
 ```{r}
-summary(fit.feature_selected)
+s<-summary(fit.feature_selected)
 s[["fixed"]][,6:7]
 ```
 
@@ -469,6 +470,12 @@ loo.weibull <- loo(fit.weibull)
 hist(loo.weibull$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values",
      ylab = "Frequency",
      freq = FALSE)
+```
+
+Model comparison: 
+
+```{r}
+loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical, loo.loo.weibull))
 ```
 
 ## WIP: Predictive performance assessment (classification)
