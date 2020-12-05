@@ -263,7 +263,8 @@ fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_cr
                           set_prior("inv_gamma(1,1)", class="b", coef="serum_creatinine"),
                           set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
                           set_prior("cauchy(0,200)", class="b", coef="serum_sodium")),
-                            refresh = 0
+                          refresh = 0,
+                          control = list(adapt_delta = 0.99)
                             )
 ```
 
