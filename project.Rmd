@@ -321,6 +321,7 @@ $Weibull(y|\alpha, \sigma) = \dfrac{\alpha}{\sigma}\left(\dfrac{y}{\sigma}\right
 
 If sample is not censored, then we are using the cumulative function of previously mentioned probability density function.  
 First we need to retrieve the original data with original age values
+
 ```{r}
 new.data <- split.train.test(heart)
 train.data <- new.data$train
@@ -582,13 +583,13 @@ predict.pointwise.accuracy <- function(fitted.model, test.data) {
 }
 ```
 
-### 
 
 ## Prior sensitivity analysis (alternative prior tested)
 
-## Discussion of problems and further improvements
+# Conclusion - Disucssion problems and further improvements
 
-# Conclusion
+In this project we aimed to discover how different values of features for patients could affect the death event given by an heart failure. We explored how different models and different approaches affect the results of our objective. Our first discovery were that some varibles had an higher correlation to the death event and we looked at this relationship when selecting the varibles for our reduced model. The second model consist on a full feature model. The third model is a hierarchical in which we used the same variables we used in the first model, the substaintial change was represnted that now patients are divided into 3 groups based on their age. The last model was created by using a different approach to the dataset, we considered time as outcome variable with respect to death event and we tried to predict the time with respect to death event. We compared the 4 models using different assesment criteria (accuracy, loo, Rhat and Neff) and we can conclude that the hierarchical model performed the best. With the posterior performance assessment we can conclude that the model fairly good and we would recommended this model as an accurate predictior.
+Future improvement could be looking at more advanced future engineering. 
 
 ## Self-reflection
 
