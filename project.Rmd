@@ -272,13 +272,15 @@ First we will discretize age data in to 3 equal depth bins.
 
 
 ```{r}
-test.data$age[test.data$age<=55] = 0
-test.data$age[test.data$age>55 & test.data$age<70] = 1
-test.data$age[test.data$age>=70] = 2
+discretize.variable <- function(variable.to.discretize, thresholds = c(55, 70)) {
+  variable.to.discretize[variable.to.discretize <= thresholds[1]] = 0
+  variable.to.discretize[variable.to.discretize > thresholds[1] & variable.to.discretize < thresholds[2]] = 1
+  variable.to.discretize[variable.to.discretize >= thresholds[2]] = 2
+  return(variable.to.discretize)
+}
 
-train.data$age[train.data$age<=55] = 0
-train.data$age[train.data$age>55 & train.data$age<70] = 1
-train.data$age[train.data$age>=70] = 2
+test.data$age <- discretize.variable(test.data$age)
+train.data$age <- discretize.variable(train.data$age)
 hist(c(train.data$age, test.data$age))
 ```
 
@@ -310,9 +312,12 @@ test.data <- new.data$test
 
 Then we can fit the model
 ```{r}
-fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ high_blood_pressure + age + serum_creatinine + serum_sodium,
+fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ high_blood_pressure + age + serum_creatinine + anaemia,
            data = train.data,
            family = weibull(),
+           prior = c(set_prior("rayleigh(40)", class="b", coef="age"),
+                      set_prior("inv_gamma(1,1)", class="b", coef="serum_creatinine")),
+           control = list(adapt_delta=0.99),
            refresh=0
 )
 ```
@@ -449,10 +454,15 @@ pp_check(fit.full, newdata = test.data)
 ```
 
 ```{r}
+test.data$age <- discretize.variable(test.data$age)
+train.data$age <- discretize.variable(train.data$age)
 pp_check(fit.hierarchical, newdata = test.data)
 ```
 
 ```{r}
+new.data <- split.train.test(heart)
+train.data <- new.data$train
+test.data <- new.data$test
 pp_check(fit.weibull, newdata = test.data)
 ```
 
@@ -478,9 +488,9 @@ hist(loo.feature_selected$diagnostics$pareto_k, main = "Diagnostic histogram of 
 
 ### Hierarchical model
 ```{r}
-loo.hier <- loo(fit.hierarchical)
+loo.hierarchical <- loo(fit.hierarchical)
 
-hist(loo.hier$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
+hist(loo.hierarchical$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k",  xlab = "k-values", 
      ylab = "Frequency",
      freq = FALSE)
 ```
@@ -498,10 +508,13 @@ hist(loo.weibull$diagnostics$pareto_k, main = "Diagnostic histogram of Pareto k"
 Model comparison: 
 
 ```{r}
-loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical, loo.loo.weibull))
+loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical))
 ```
 
 ## WIP: Predictive performance assessment (classification)
+
+For actually seeing how the model performs, we split the data in to train and test sets. 
+We have to use different train and test test for the hierarchical, but otherwise the pointwise testing is straigth forward
 
 Function for predicting pointwise accuracy
 ```{r}
@@ -525,7 +538,7 @@ predict.pointwise.accuracy <- function(fitted.model, test.data) {
 
 ## Self-reflection
 
-As a group we have learned...
+We learned to work as a group. We used GitHub for version management, and it was nice to see that with communication we had zero conflicts, even though we only worked on main-branch. Seems like we also stayed on time perfectly. At first we were having group meetings really early, but it was worth it because we had longer time to think about the problem and possible solutions. 
 
 \newpage
 # Appendix {-}
