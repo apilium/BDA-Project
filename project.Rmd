@@ -530,13 +530,10 @@ test.data <- new.data$test
 pp_check(fit.weibull, nsamples=50, newdata = test.data)
 ```
 
-<<<<<<< HEAD
-A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
 
-=======
 \newpage
->>>>>>> 640e8aa594c5e31fd15526b99c30b7de190d7cc5
 ## Model comparison and interpretation of the results
+A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
 
 ### Full model
 
@@ -605,7 +602,51 @@ predict.pointwise.accuracy <- function(fitted.model, test.data) {
 ```
 
 
+
 ## Prior sensitivity analysis (alternative prior tested)
+
+
+### Full model
+
+### Feature selected model
+
+First use priors that we picked
+```{r}
+prior.fit.feature_selected.basic <- brm(formula = time | cens(DEATH_EVENT) ~ age  + anaemia + high_blood_pressure,
+           data = train.data,
+           family = weibull(),
+           prior = c(set_prior("cauchy(40, 20)", class="b", coef="age"),
+                     prior_string("normal(.5, .5)", class="b", coef="anaemia"),
+                     prior_string("normal(.5, .5)", class="b", coef="high_blood_pressure")),
+           refresh=0,
+                          sample_prior = 'only')
+
+death.events <- train.data$time
+yrep <- posterior_predict(prior.fit.feature_selected.basic, draws=length(death.events))
+ppc_dens_overlay(y=death.events, yrep = yrep)
+
+pp_check(prior.fit.feature_selected.basic)
+```
+
+
+Then use normal priors
+```{r}
+prior.fit.feature_selected.uninfo <- brm(formula = time | cens(DEATH_EVENT) ~ age  + anaemia + high_blood_pressure,
+           data = train.data,
+           family = weibull(),
+           prior = set_prior('normal(0,1000)'),
+           refresh=0)
+death.events <- train.data$time
+yrep <- posterior_predict(prior.fit.feature_selected.uninfo, draws=length(death.events))
+ppc_dens_overlay(y=death.events, yrep = yrep)
+```
+
+
+### Weibull model
+
+```{r}
+```
+
 
 # Conclusion - Disucssion problems and further improvements
 
