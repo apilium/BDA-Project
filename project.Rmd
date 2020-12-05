@@ -360,7 +360,7 @@ $$\text{ejection fraction} \sim Beta(6,4)$$
 
 - Serum sodium should be around 135 and 145, but we gave it large variance with (half) cauchy(0,200). Severe symptoms of too high sodium levels start above 160, so this prior gives a lot room to reach fatal levels. 
 $$\text{serum sodium} \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$$
-$$\text{serum sodium} \sim Cauch(0,200)$$
+$$\text{serum sodium} \sim Cauchy(0,200)$$
 
 - Priors for anemia, smoking, high blood pressure and sex were chosen as uniform beta(1,1). This is because they might get values 0 or 1 with equal probabilities.  
 $$\text{anemia, smoking, high blood pressure, sex} \sim \mathcal{N}(.5,.5)$$  
