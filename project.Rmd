@@ -372,9 +372,18 @@ $$\text{Intercept} \sim StudentT(3, 0, 2.5)$$
 
 By default BRMS uses improper flat prior over the reals for population level parameters. Group level parameter is assumed to come from multivariate normal distribution with zero mean and unknown covariance matrix. 
 
+
+There is more than one group-level effect per grouping factor, so correlations between those effects have to be estimated. Group level correlation matrix is generated uniformly over all positive definite correlation matrices using LKJ distribution as shown below:
+
+$$
+\text{LkjCholesky}(L|\eta)
+\propto \left|J\right|\det(L L^\top)^{(\eta - 1)} = \prod_{k=2}^K
+L_{kk}^{K-k+2\eta-2}
+$$
+
 ## $\hat{R}$ convergence 
 
-### Summary for the linear model with all variables 
+### Linear model with all variables 
 ```{r}
 rhats <- rhat(fit.full)
 color_scheme_set("brightblue") # see help("color_scheme_set")
@@ -382,7 +391,7 @@ mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for model with a
 ```
 
 
-### Summary for the linear model with selected variables 
+### Linear model with selected variables 
 
 ```{r}
 rhats <- rhat(fit.feature_selected)
@@ -390,11 +399,19 @@ color_scheme_set("brightblue") # see help("color_scheme_set")
 mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for model with selected variables") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
-### Summary for the hierarchical model with all variables 
+### Hierarchical model with all variables 
 ```{r}
 rhats <- rhat(fit.hierarchical)
 color_scheme_set("brightblue") # see help("color_scheme_set")
 mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for hierarchical model with all variables") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Weibull model
+
+```{r}
+rhats <- rhat(fit.weibull)
+color_scheme_set("brightblue") # see help("color_scheme_set")
+mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for Weibull model") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 From the model summaries, it is observable that $\hat{R}$ values for all models are around 1.0 which is below the threshold value of 1.05 as mentioned in Stan documentation. With this information, we can interpret that the chains have mixed well and the samples are reliable.
@@ -482,7 +499,12 @@ A detailed comparison is carried at the end of the "Model comparison and interpr
 
 ## Posterior predictive checking
 
+First three models seem to converge well to the actual test set. The death event is more predictable than the survival because the events leading to death are more predictable.
+
+Weibull model has a lot of variance but as the underlying distribution is multimodal, it is hard to modelled with small amount of data. The double peak is explained by the fact that some patients already had a high probability of death due to severe ventricular systolic dysfunction. The model does perform well with regards to detecting the death event at certain timestep. Due to the small amount of data, the distribution might be hard to interpret the actual scenario.
+
 ### Feature selected model
+
 ```{r}
 pp_check(fit.feature_selected, nsamples=50, newdata = test.data)
 ```
