@@ -304,7 +304,8 @@ fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creati
            c(set_prior("cauchy(0,5)", class="b", coef="serum_creatinine"),
                           set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
                           set_prior("normal(100,40)", class="b", coef="serum_sodium")),
-           refresh=0
+           refresh=0,
+           control = list(adapt_delta = 0.99)
 )
 ```
 
@@ -540,6 +541,9 @@ Model comparison:
 ```{r}
 loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical))
 ```
+
+From the PSIS_LOO we can see that the hierarchical model has the highest value compared to the other two models. This value is an indicator of model performance and the best model would be the one with the highest PSIS-LOO. Using the "loo" package we are able to estimate the difference in the models expected predictive accuracy and the function "loo_compare" creates a chart of the models with the one with highest ELPD (smallest LOOIC) first with zero values, meaning that is the best. We can see that the hierarchical model outstand the others and that there is a noticeable difference between the hierarchical model and the other models.
+
 
 ## WIP: Predictive performance assessment (classification)
 
