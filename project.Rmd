@@ -442,7 +442,7 @@ check_divergences(fit.weibull$fit)
 check_treedepth(fit.weibull$fit)
 ```
 
-A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
+As we can see, only in the feature selected model we observe some iterations to diverge. However we believe the ratio of the divergent iterations  and the total iterations can be considered negligible and maybe can be fixed using different priors (more informative). More accurate analysis about the models can be found in the next sections where we investigate more on the quality of the latters. 
 
 ## Effective sample size diagnostic (n_eff or ESS)
 
