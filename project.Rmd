@@ -117,6 +117,8 @@ library(knitr)
 opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 ```
 
+
+\newpage
 # Data preprocessing and visualization
 
 ## Plot histograms
@@ -222,7 +224,9 @@ test.data <- new.data$test
 ## Model fitting
 
 The Generalised Linear Model used for every parametrisation is Bernoulli-Logit Generalised Linear Model for the first three models, which is logistic regression. It's expressed in mathematical terms as following:  
+
 $BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | logit^{-1}(\alpha_i + x_i\times \beta))$
+
 
 
 ### Full model
@@ -309,7 +313,11 @@ fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creati
 
 As a fourth model we have model with response variable according to Weibull distribution, and features are selected based on correlation matrix.  
 In death time analysis model we are using different functions based on whether sample is censored or not. If sample is censored, then we are using log probability density function  
+
+
 $Weibull(y|\alpha, \sigma) = \dfrac{\alpha}{\sigma}\left(\dfrac{y}{\sigma}\right)^{-\alpha-1}exp\left(-\left(\dfrac{y}{\sigma}\right)^{\alpha}\right)$.
+
+
 If sample is not censored, then we are using the cumulative function of previously mentioned probability density function.  
 First we need to retrieve the original data with original age values
 ```{r}
@@ -324,12 +332,11 @@ fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ age  + anaemia + high_bl
            data = train.data,
            family = weibull(),
            prior = c(set_prior("cauchy(40, 20)", class="b", coef="age"),
-                     set_prior("normal(.5, .5)", class="b", coef="anaemia"),
-                     set_prior("normal(.5, .5)", class="b", coef="high_blood_pressure")),
+                     prior_string("normal(.5, .5)", class="b", coef="anaemia"),
+                     prior_string("normal(.5, .5)", class="b", coef="high_blood_pressure")),
            refresh=0
 )
 ```
-
 
 ## Prior choices 
 
@@ -338,6 +345,8 @@ We chose priors based on articles that we read about medical measurements. We us
 ### First models
 
 Same priors were used more or less to every of first 3 models, and we will specify them here.  
+
+**Coefficient distributions**  
 Age distribution is using half Cauchy distribution, which fits our population well. Cauchy is non-negative continuous distribution, which peaks at around 40, and decades to over 100. This is good, because it forces the prior to be non-negative, which is a must in age distribution. Also it centers around 40, which is convenient, because our age started from 40. 
 $age \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$
 $age \sim Cauchy(40,20)$
@@ -354,7 +363,14 @@ Serum sodium should be around 135 and 145, but we gave it large variance with (h
 $\text{serum sodium} \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$
 $\text{serum sodium} \sim Cauch(0,200)$
 
-Priors for anemia, smoking, high blood pressure and sex were chosen as normal(.5, .5). This is because they might get values 0 or 1 with equal probabilities. 
+Priors for anemia, smoking, high blood pressure and sex were chosen as uniform beta(1,1). This is because they might get values 0 or 1 with equal probabilities.  
+$\text{anemia, smoking, high blood pressure, sex} \sim \mathcal{N}(.5,.5)$  
+
+
+**Intercept distribution**
+Intercept distribution was student_t for every coefficient. The student_t distribution is parametrized by default as student_t(3, 0, 2.5).
+$\text{Intercept} \sim StudentT(y|\upsilon, \mu, \sigma) = \dfrac{\Gamma((\upsilon+1)/2)}{\Gamma(\upsilon/2)}\left(1+\dfrac{1}{\upsilon}\left(\dfrac{y-\mu}{\sigma}\right)^2\right)^{-(\upsilon+1)/2}$
+$\text{Intercept} \sim StudentT(3,0$
 
 The types of priors we considered in this project are uninformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors. The domain is also highly specialized, as the target group is specific group of people over 40 years who have gone through ventricular systolic dysfunction. We can't simply infer any prior knowledge on this group. 
 
@@ -459,26 +475,27 @@ s[["fixed"]][,6:7]
 ## Posterior predictive checking and interpretation of the results
 
 ```{r}
-pp_check(fit.feature_selected, newdata = test.data)
+pp_check(fit.feature_selected, nsamples=50, newdata = test.data)
 ```
 
 ```{r}
-pp_check(fit.full, newdata = test.data)
+pp_check(fit.full, nsamples=50, newdata = test.data)
 ```
 
 ```{r}
 test.data$age <- discretize.variable(test.data$age)
 train.data$age <- discretize.variable(train.data$age)
-pp_check(fit.hierarchical, newdata = test.data)
+pp_check(fit.hierarchical, nsamples=50, newdata = test.data)
 ```
 
 ```{r}
 new.data <- split.train.test(heart)
 train.data <- new.data$train
 test.data <- new.data$test
-pp_check(fit.weibull, newdata = test.data)
+pp_check(fit.weibull, nsamples=50, newdata = test.data)
 ```
 
+\newpage
 ## Model comparison and interpretation of the results
 
 ### Full model
