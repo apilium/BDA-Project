@@ -21,18 +21,18 @@ output:
 
 # Introduction
 
-In this project we analyse the data from Heart desease dataset [@origpaper]. We perform a Bayesian analysis of the data using this sequence of operations:
+In this project we analyse the data from Heart disease dataset [@origpaper]. We perform a Bayesian analysis of the data using this sequence of operations:
 
-**Overview of analysis problem and of the dataset**
-**Data preprocsessing and visualisation**
-**Prior choice discussion**
-**Models used in our analysis**
-**$\hat{R}$ convergence**
-**HMC specific convergence diagnostics**
-**Effective sample size diagnostic (n_eff or ESS)**
-**Model comparison**
-**Prior sensitivity analysis**
-**Discussion and conclusion**
+- **Overview of analysis problem and of the dataset**
+- **Data preprocessing and visualisation**
+- **Prior choice discussion**
+- **Models used in our analysis**
+- **$\hat{R}$ convergence**
+- **HMC specific convergence diagnostics**
+- **Effective sample size diagnostic (n_eff or ESS)**
+- **Model comparison**
+- **Prior sensitivity analysis**
+- **Discussion and conclusion**
 
 In this project, we are observing the dataset from two distinct point of views.
 On the other hand, we want to do predictive analysis whether patient dies, or survives the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. For this reason we are inspecting the variables from two points. More about this in upcoming chapters.
@@ -225,7 +225,7 @@ test.data <- new.data$test
 
 The Generalised Linear Model used for every parametrisation is Bernoulli-Logit Generalised Linear Model for the first three models, which is logistic regression. It's expressed in mathematical terms as following:  
 
-$BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | logit^{-1}(\alpha_i + x_i\times \beta))$
+$$BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | logit^{-1}(\alpha_i + x_i\times \beta))$$
 
 
 
@@ -234,7 +234,7 @@ $BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | lo
 Stan code for full model can be found in Appendix A.  
 Full model includes all the parameters that are specified in the dataset.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia + sex,
                 prior = c(set_prior("cauchy(40,20)", class="b", coef="age"),
                           set_prior("inv_gamma(1,5)", class="b", coef="serum_creatinine"),
@@ -259,7 +259,7 @@ In feature selected model, we hand pick the features that seems to be the most p
 
 Based on this we can choose these variables to be the important ones, and build a model with them.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 fit.feature_selected <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
                             data = train.data,
                             family = bernoulli(),
@@ -297,7 +297,7 @@ hist(c(train.data$age, test.data$age))
 ```
 
 Then we can fit the model
-```{r}
+```{r message=FALSE, warning=FALSE}
 fit.hierarchical <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + (ejection_fraction + serum_creatinine + serum_sodium| age),
            data = train.data,
            family = bernoulli(),
@@ -316,7 +316,7 @@ As a fourth model we have model with response variable according to Weibull dist
 In death time analysis model we are using different functions based on whether sample is censored or not. If sample is censored, then we are using log probability density function  
 
 
-$Weibull(y|\alpha, \sigma) = \dfrac{\alpha}{\sigma}\left(\dfrac{y}{\sigma}\right)^{-\alpha-1}exp\left(-\left(\dfrac{y}{\sigma}\right)^{\alpha}\right)$.
+$$Weibull(y|\alpha, \sigma) = \dfrac{\alpha}{\sigma}\left(\dfrac{y}{\sigma}\right)^{-\alpha-1}exp\left(-\left(\dfrac{y}{\sigma}\right)^{\alpha}\right)$$.
 
 
 If sample is not censored, then we are using the cumulative function of previously mentioned probability density function.  
@@ -329,7 +329,7 @@ test.data <- new.data$test
 ```
 
 Then we can fit the model
-```{r}
+```{r message=FALSE, warning=FALSE}
 fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ age  + anaemia + high_blood_pressure,
            data = train.data,
            family = weibull(),
@@ -349,32 +349,30 @@ We chose priors based on articles that we read about medical measurements. We us
 Same priors were used more or less to every of first 3 models, and we will specify them here.  
 
 **Coefficient distributions**  
-Age distribution is using half Cauchy distribution, which fits our population well. Cauchy is non-negative continuous distribution, which peaks at around 40, and decades to over 100. This is good, because it forces the prior to be non-negative, which is a must in age distribution. Also it centers around 40, which is convenient, because our age started from 40. 
-$age \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$
-$age \sim Cauchy(40,20)$
+- Age distribution is using half Cauchy distribution, which fits our population well. Cauchy is non-negative continuous distribution, which peaks at around 40, and decades to over 100. This is good, because it forces the prior to be non-negative, which is a must in age distribution. Also it centers around 40, which is convenient, because our age started from 40. 
+$$age \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$$
+$$age \sim Cauchy(40,20)$$
 
-Serum creatinine used inverse gamma distribution. Creatinine levels also need non-negative distribution, and the normal level should be between 0.9 and 1.3. Severe symptoms start when creatinine reaches over 5, so we don't restrict the tail.
-$\text{serum creatinine} \sim InvGamma(y|\alpha, \beta) = \dfrac{\beta^{\alpha}}{\Gamma(\alpha)}y^{-(\alpha + 1)}exp\left(-\beta \dfrac{1}{y}\right)$
-$\text{serum creatinine} \sim  InvGamma(1,1)$
+- Serum creatinine used inverse gamma distribution. Creatinine levels also need non-negative distribution, and the normal level should be between 0.9 and 1.3. Severe symptoms start when creatinine reaches over 5, so we don't restrict the tail.
+$$\text{serum creatinine} \sim InvGamma(y|\alpha, \beta) = \dfrac{\beta^{\alpha}}{\Gamma(\alpha)}y^{-(\alpha + 1)}exp\left(-\beta \dfrac{1}{y}\right)$$
+$$\text{serum creatinine} \sim  InvGamma(1,1)$$
 
-Ejection fraction is constrained to be from 0 to 100, as its expressed in percentage. For this reason we need to use beta distribution. We chose to parametrize beta distribution as (6,4), because the ejection fraction should be between 50 and 60. (6,4) parametrization provides us mean of 0.6.
-$\text{ejection fraction} \sim Beta(y|\alpha, \beta) \dfrac{1}{B(\alpha, \beta)}\theta^{\alpha - 1}(1-\theta)^{\beta-1}$
-$\text{ejection fraction} \sim Beta(6,4)$
+- Ejection fraction is constrained to be from 0 to 100, as its expressed in percentage. For this reason we need to use beta distribution. We chose to parametrize beta distribution as (6,4), because the ejection fraction should be between 50 and 60. (6,4) parametrization provides us mean of 0.6.
+$$\text{ejection fraction} \sim Beta(y|\alpha, \beta) \dfrac{1}{B(\alpha, \beta)}\theta^{\alpha - 1}(1-\theta)^{\beta-1}$$
+$$\text{ejection fraction} \sim Beta(6,4)$$
 
-Serum sodium should be around 135 and 145, but we gave it large variance with (half) cauchy(0,200). Severe symptoms of too high sodium levels start above 160, so this prior gives a lot room to reach fatal levels. 
-$\text{serum sodium} \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$
-$\text{serum sodium} \sim Cauch(0,200)$
+- Serum sodium should be around 135 and 145, but we gave it large variance with (half) cauchy(0,200). Severe symptoms of too high sodium levels start above 160, so this prior gives a lot room to reach fatal levels. 
+$$\text{serum sodium} \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$$
+$$\text{serum sodium} \sim Cauch(0,200)$$
 
-Priors for anemia, smoking, high blood pressure and sex were chosen as uniform beta(1,1). This is because they might get values 0 or 1 with equal probabilities.  
-$\text{anemia, smoking, high blood pressure, sex} \sim \mathcal{N}(.5,.5)$  
+- Priors for anemia, smoking, high blood pressure and sex were chosen as uniform beta(1,1). This is because they might get values 0 or 1 with equal probabilities.  
+$$\text{anemia, smoking, high blood pressure, sex} \sim \mathcal{N}(.5,.5)$$  
 
 
 **Intercept distribution**
-Intercept distribution was student_t for every coefficient. The student_t distribution is parametrized by default as student_t(3, 0, 2.5).
-$\text{Intercept} \sim StudentT(y|\upsilon, \mu, \sigma) = \dfrac{\Gamma((\upsilon+1)/2)}{\Gamma(\upsilon/2)}\left(1+\dfrac{1}{\upsilon}\left(\dfrac{y-\mu}{\sigma}\right)^2\right)^{-(\upsilon+1)/2}$
-$\text{Intercept} \sim StudentT(3,0$
-
-The types of priors we considered in this project are uninformative priors and regularizing priors. Surely this dataset is not the only one about heart failure but since no prior knowledge are provided in the original papers we opted for using uninformative priors. The domain is also highly specialized, as the target group is specific group of people over 40 years who have gone through ventricular systolic dysfunction. We can't simply infer any prior knowledge on this group. 
+Intercept distribution was student_t for every coefficient. The student_t distribution is parameterized by default as student_t(3, 0, 2.5).
+$$\text{Intercept} \sim StudentT(y|\upsilon, \mu, \sigma) = \dfrac{\Gamma((\upsilon+1)/2)}{\Gamma(\upsilon/2)}\left(1+\dfrac{1}{\upsilon}\left(\dfrac{y-\mu}{\sigma}\right)^2\right)^{-(\upsilon+1)/2}$$
+$$\text{Intercept} \sim StudentT(3, 0, 2.5)$$
 
 By default BRMS uses improper flat prior over the reals for population level parameters. Group level parameter is assumed to come from multivariate normal distribution with zero mean and unknown covariance matrix. 
 
@@ -476,7 +474,7 @@ ratio<-neff_ratio(fit.hierarchical)
 mcmc_neff_hist(ratio)
 ```
 
-### Weibul model
+### Weibull model
 ```{r}
 s<-summary(fit.weibull)
 s[["fixed"]][,6:7]
@@ -488,20 +486,24 @@ A detailed comparison is carried at the end of the "Model comparison and interpr
 
 ## Posterior predictive checking
 
+### Feature selected model
 ```{r}
 pp_check(fit.feature_selected, nsamples=50, newdata = test.data)
 ```
 
+### Full model
 ```{r}
 pp_check(fit.full, nsamples=50, newdata = test.data)
 ```
 
+### Hierarchical model
 ```{r}
 test.data$age <- discretize.variable(test.data$age)
 train.data$age <- discretize.variable(train.data$age)
 pp_check(fit.hierarchical, nsamples=50, newdata = test.data)
 ```
 
+### Weibull model
 ```{r}
 new.data <- split.train.test(heart)
 train.data <- new.data$train
