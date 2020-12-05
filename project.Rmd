@@ -558,7 +558,7 @@ Model comparison:
 loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical))
 ```
 
-Leave-one-out cross-validation is a method for estimating pointwise out-of-sample prediction accuracy from a fitted Bayesian model using the log-likelihood evaluated at the posterior simulations of the parameter values [reference to aki paper].
+Leave-one-out cross-validation is a method for estimating pointwise out-of-sample prediction accuracy from a fitted Bayesian model using the log-likelihood evaluated at the posterior simulations of the parameter values [@loo].
 From the PSIS_LOO we can see that the hierarchical model has the highest value compared to the other two models. This value is an indicator of model performance and the best model would be the one with the highest PSIS-LOO. Using the "loo" package we are able to estimate the difference in the models expected predictive accuracy and the function "loo_compare" creates a chart of the models with the one with highest ELPD (smallest LOOIC) first with zero values, meaning that is the best. We can see that the hierarchical model outstand the others and that there is a noticeable difference between the hierarchical model and the other models.
 Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are consdered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. As we can see from the k-values of the 4 models, only the hierarchical one return values greater than 0.7. This fact makes that model less reliable. Regarding the feature selected model, the full model and the weibull one all k-values are below the 0.7 treshold. 
 
