@@ -34,8 +34,7 @@ In this project we analyse the data from Heart disease dataset [@origpaper]. We 
 - **Prior sensitivity analysis**
 - **Discussion and conclusion**
 
-In this project, we are observing the dataset from two distinct point of views.
-On the other hand, we want to do predictive analysis whether patient dies, or survives the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. For this reason we are inspecting the variables from two points. More about this in upcoming chapters.
+In this project, we are observing the dataset from two distinct point of views. The first approach was based on the simple predictive analysis whether patient dies, or survives  the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. Different models are used to carry this analysis and a model comparison is perfomred in order to asses the quality of the analysis. More informations in upcoming chapters. 
 
 ## The problem
 Cardiovascular Heart Disease (CHD) is the top reason causing 31% of deaths globally. Pakistan is one of the countries where CHD is increasing significantly, and previous studies do not directly apply to Pakistani area due to different diet patterns.
@@ -84,13 +83,11 @@ Normal levels of serum sodium are 135 to 145 mEq/L, according to Mayo Clinic. Th
 
 * **Time**
 Time variable indicates the time since the research has started for that person (the time of ventricular systolic dysfunction). We have time variable included, because we have to inspect when the death events are happening. This variable is ignored in the first three models, because we wanted to also interpret this dataset from binary survival approach, so predict whether patient dies or not.  
-
-
 ## Dataset introduction
 
 The dataset of 299 patients was produced as a result of study [@origpaper] from Pakistani's city Faisalabad. All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction. The follow up period was 4 to 285 days, with average of 130 days. This has to be taken in to consideration when doing the survival analysis.  
 The dataset has 105 women, and 194 men.
-EF, serum creatinine and platelets are categorical variables, and age, serum sodium and CPK are continuous variables.  
+Some features such as: Ejection fraction, serum creatinine and platelets are categorical variables, while age, serum sodium and creatine phosphokinase are continuous variables.  
 Statistical analysis by [@origpaper] found age, creatinine, sodium, anemia and BP as significant variables.  
  
 \newpage
@@ -116,7 +113,6 @@ Prevent text overflow on PDF
 library(knitr)
 opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 ```
-
 
 \newpage
 # Data preprocessing and visualization
@@ -472,7 +468,7 @@ A detailed comparison is carried at the end of the "Model comparison and interpr
 s<-summary(fit.feature_selected)
 s[["fixed"]][,6:7]
 ratio<-neff_ratio(fit.feature_selected)
-mcmc_neff_hist(ratio)
+mcmc_neff(ratio)
 ```
 
 ### Full model
@@ -480,7 +476,7 @@ mcmc_neff_hist(ratio)
 s<-summary(fit.full)
 s[["fixed"]][,6:7]
 ratio<-neff_ratio(fit.full)
-mcmc_neff_hist(ratio)
+mcmc_neff(ratio)
 ```
 
 ### Hierarchical model
@@ -488,7 +484,7 @@ mcmc_neff_hist(ratio)
 s<-summary(fit.hierarchical)
 s[["fixed"]][,6:7]
 ratio<-neff_ratio(fit.hierarchical)
-mcmc_neff_hist(ratio)
+mcmc_neff(ratio)
 ```
 
 ### Weibull model
@@ -496,7 +492,7 @@ mcmc_neff_hist(ratio)
 s<-summary(fit.weibull)
 s[["fixed"]][,6:7]
 ratio<-neff_ratio(fit.weibull)
-mcmc_neff_hist(ratio)
+mcmc_neff(ratio)
 ```
 
 A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
@@ -584,9 +580,9 @@ Model comparison:
 loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical))
 ```
 
-Leave-one-out cross-validation is a method for estimating pointwise out-of-sample prediction accuracy from a fitted Bayesian model using the log-likelihood evaluated at the posterior simulations of the parameter values [reference to aki paper].
+Leave-one-out cross-validation is a method for estimating pointwise out-of-sample prediction accuracy from a fitted Bayesian model using the log-likelihood evaluated at the posterior simulations of the parameter values [@loo].
 From the PSIS_LOO we can see that the hierarchical model has the highest value compared to the other two models. This value is an indicator of model performance and the best model would be the one with the highest PSIS-LOO. Using the "loo" package we are able to estimate the difference in the models expected predictive accuracy and the function "loo_compare" creates a chart of the models with the one with highest ELPD (smallest LOOIC) first with zero values, meaning that is the best. We can see that the hierarchical model outstand the others and that there is a noticeable difference between the hierarchical model and the other models.
-Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are consdered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. [comment our kvalues]
+Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are consdered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. As we can see from the k-values of the 4 models, only the hierarchical one return values greater than 0.7. This fact makes that model less reliable. Regarding the feature selected model, the full model and the weibull one all k-values are below the 0.7 treshold. 
 
 The effective sample size (ESS) measures the amount by which autocorrelation in samples increases uncertainty (standard errors) relative to an independent sample. In other words the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The $n_{eff}$ metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter. Usually smaller than the total sample size $N$ so the larger the ratio to $N$, the better. [comment our neff]
 
