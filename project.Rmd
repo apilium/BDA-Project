@@ -455,7 +455,7 @@ A detailed comparison is carried at the end of the "Model comparison and interpr
 s<-summary(fit.feature_selected)
 s[["fixed"]][,6:7]
 ratio<-neff_ratio(fit.feature_selected)
-mcmc_neff_hist(ratio)
+mcmc_neff(ratio)
 ```
 
 ### Full model
@@ -463,7 +463,7 @@ mcmc_neff_hist(ratio)
 s<-summary(fit.full)
 s[["fixed"]][,6:7]
 ratio<-neff_ratio(fit.full)
-mcmc_neff_hist(ratio)
+mcmc_neff(ratio)
 ```
 
 ### Hierarchical model
@@ -471,7 +471,7 @@ mcmc_neff_hist(ratio)
 s<-summary(fit.hierarchical)
 s[["fixed"]][,6:7]
 ratio<-neff_ratio(fit.hierarchical)
-mcmc_neff_hist(ratio)
+mcmc_neff(ratio)
 ```
 
 ### Weibull model
@@ -479,7 +479,7 @@ mcmc_neff_hist(ratio)
 s<-summary(fit.weibull)
 s[["fixed"]][,6:7]
 ratio<-neff_ratio(fit.weibull)
-mcmc_neff_hist(ratio)
+mcmc_neff(ratio)
 ```
 
 A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
