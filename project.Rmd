@@ -447,30 +447,40 @@ check_divergences(fit.weibull$fit)
 check_treedepth(fit.weibull$fit)
 ```
 
+A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
+
 ## Effective sample size diagnostic (n_eff or ESS)
 
 ### Feature selected model
 ```{r}
 s<-summary(fit.feature_selected)
 s[["fixed"]][,6:7]
+ratio<-neff_ratio(fit.feature_selected)
+mcmc_neff_hist(ratio)
 ```
 
 ### Full model
 ```{r}
 s<-summary(fit.full)
 s[["fixed"]][,6:7]
+ratio<-neff_ratio(fit.full)
+mcmc_neff_hist(ratio)
 ```
 
 ### Hierarchical model
 ```{r}
 s<-summary(fit.hierarchical)
 s[["fixed"]][,6:7]
+ratio<-neff_ratio(fit.hierarchical)
+mcmc_neff_hist(ratio)
 ```
 
 ### Weibul model
 ```{r}
 s<-summary(fit.weibull)
 s[["fixed"]][,6:7]
+ratio<-neff_ratio(fit.weibull)
+mcmc_neff_hist(ratio)
 ```
 
 A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
@@ -551,7 +561,9 @@ loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical))
 
 Leave-one-out cross-validation is a method for estimating pointwise out-of-sample prediction accuracy from a fitted Bayesian model using the log-likelihood evaluated at the posterior simulations of the parameter values [reference to aki paper].
 From the PSIS_LOO we can see that the hierarchical model has the highest value compared to the other two models. This value is an indicator of model performance and the best model would be the one with the highest PSIS-LOO. Using the "loo" package we are able to estimate the difference in the models expected predictive accuracy and the function "loo_compare" creates a chart of the models with the one with highest ELPD (smallest LOOIC) first with zero values, meaning that is the best. We can see that the hierarchical model outstand the others and that there is a noticeable difference between the hierarchical model and the other models.
-Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are consdered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done.
+Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are consdered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. [comment our kvalues]
+
+The effective sample size (ESS) measures the amount by which autocorrelation in samples increases uncertainty (standard errors) relative to an independent sample. In other words the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The $n_{eff}$ metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter. Usually smaller than the total sample size $N$ so the larger the ratio to $N$, the better. [comment our neff]
 
 ## WIP: Predictive performance assessment (classification)
 
