@@ -83,6 +83,8 @@ Normal levels of serum sodium are 135 to 145 mEq/L, according to Mayo Clinic. Th
 
 * **Time**
 Time variable indicates the time since the research has started for that person (the time of ventricular systolic dysfunction). We have time variable included, because we have to inspect when the death events are happening. This variable is ignored in the first three models, because we wanted to also interpret this dataset from binary survival approach, so predict whether patient dies or not.  
+
+
 ## Dataset introduction
 
 The dataset of 299 patients was produced as a result of study [@origpaper] from Pakistani's city Faisalabad. All of the patients were over 40 years old, each having ventricular systolic dysfunction. This means that patient has poor left ventricular ejection fraction. The follow up period was 4 to 285 days, with average of 130 days. This has to be taken in to consideration when doing the survival analysis.  
@@ -357,7 +359,7 @@ $$age \sim Cauchy(40,20)$$
 $$\text{serum creatinine} \sim InvGamma(y|\alpha, \beta) = \dfrac{\beta^{\alpha}}{\Gamma(\alpha)}y^{-(\alpha + 1)}exp\left(-\beta \dfrac{1}{y}\right)$$
 $$\text{serum creatinine} \sim  InvGamma(1,1)$$
 
-- Ejection fraction is constrained to be from 0 to 100, as its expressed in percentage. For this reason we need to use beta distribution. We chose to parametrize beta distribution as (6,4), because the ejection fraction should be between 50 and 60. (6,4) parametrization provides us mean of 0.6.
+- Ejection fraction is constrained to be from 0 to 100, as its expressed in percentage. For this reason we need to use beta distribution. We chose to parametrize beta distribution as (6,4), because the ejection fraction should be between 50 and 70. (6,4) parametrization provides us mean of 0.6.
 $$\text{ejection fraction} \sim Beta(y|\alpha, \beta) \dfrac{1}{B(\alpha, \beta)}\theta^{\alpha - 1}(1-\theta)^{\beta-1}$$
 $$\text{ejection fraction} \sim Beta(6,4)$$
 
@@ -466,7 +468,7 @@ check_divergences(fit.weibull$fit)
 check_treedepth(fit.weibull$fit)
 ```
 
-As we can see, only in the feature selected model we observe some iterations to diverge. However we believe the ratio of the divergent iterations  and the total iterations can be considered negligible and maybe can be fixed using different priors (more informative). More accurate analysis about the models can be found in the next sections where we investigate more on the quality of the latters. 
+As we can see, we hardly observe any divergence. However we believe the ratio of the divergent iterations  and the total iterations can be considered negligible and maybe can be fixed using different priors (more informative). More accurate analysis about the models can be found in the next sections where we investigate more on the quality of the latters. 
 
 ## Effective sample size diagnostic (n_eff or ESS)
 
@@ -591,7 +593,7 @@ Pareto k-values estimates the tail shape which determines the convergence rate o
 
 The effective sample size (ESS) measures the amount by which autocorrelation in samples increases uncertainty (standard errors) relative to an independent sample. In other words the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The $n_{eff}$ metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter. Usually smaller than the total sample size $N$ so the larger the ratio to $N$, the better. [comment our neff]
 
-## WIP: Predictive performance assessment (classification)
+## Predictive performance assessment (classification)
 
 For actually seeing how the models perform, we split the data into train and test sets. We have to use different train and test sets for the hierarchical model, but the pointwise accuracy assessment is straightforward in discrete models by checking the prediction classes with test data labels. 
 
