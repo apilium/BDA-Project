@@ -237,6 +237,7 @@ fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatini
                           set_prior("inv_gamma(1,5)", class="b", coef="serum_creatinine"),
                           set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
                           set_prior("cauchy(0,200)", class="b", coef="serum_sodium"),
+                          set_prior("cauchy(0,4000)", class="b", coef="creatinine_phosphokinase"),
                           set_prior("normal(.5, .5)", class="b", coef="anaemia"),
                           set_prior("normal(.5, .5)", class="b", coef="diabetes"),
                           set_prior("normal(.5, .5)", class="b", coef="smoking"),
@@ -363,6 +364,9 @@ $$\text{ejection fraction} \sim Beta(6,4)$$
 - Serum sodium should be around 135 and 145, but we gave it large variance with (half) cauchy(0,200). Severe symptoms of too high sodium levels start above 160, so this prior gives a lot room to reach fatal levels. 
 $$\text{serum sodium} \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$$
 $$\text{serum sodium} \sim Cauchy(0,200)$$
+- Creatinine phosphokinase regular levels are between 20 and 200, but it can reach in certain coditions even hundreds of thousand. This is why we dont want to limit our priors. We chose 
+
+$$\text{serum sodium} \sim Cauchy(0,4000)$$
 
 - Priors for anemia, smoking, high blood pressure and sex were chosen as uniform beta(1,1). This is because they might get values 0 or 1 with equal probabilities.  
 $$\text{anemia, smoking, high blood pressure, sex} \sim \mathcal{N}(.5,.5)$$  
@@ -606,49 +610,35 @@ predict.pointwise.accuracy <- function(fitted.model, test.data) {
 
 ## Prior sensitivity analysis (alternative prior tested)
 
-We will be using weibull model, because it has the most clear troubles on defining the priors. 
+We will use the model that has most priors for prior sensitivity analysis, the full model. This describes the meaning of prior well.
 
-### 
-
-First use priors that we picked DOESNT WORK?!?! REMOVE??????
-```{r}
-# prior.weibull.basic <- brm(formula = time | cens(DEATH_EVENT) ~ age  + anaemia + high_blood_pressure,
-#            data = train.data,
-#            family = weibull(),
-#            prior = c(set_prior("cauchy(40, 20)", class="b", coef="age"),
-#                      prior_string("normal(.5, .5)", class="b", coef="anaemia"),
-#                      prior_string("normal(.5, .5)", class="b", coef="high_blood_pressure")),
-#                       refresh=0,
-#                       sample_prior = 'only',
-#                       control = list(adapt_delta = 0.999))
-
-#death.events <- train.data[train.data$DEATH_EVENT == 1, ncol(train.data)-1]
-#yrep <- brms::posterior_predict(prior.weibull.basic, newdata = test.data, draws=length(death.events))
-#ppc_dens_overlay(y=death.events, yrep = yrep)
-```
-
-
-Use priors that we previously chose
+First let's use priors that we have chosen to be informative.
 ```{r message=FALSE, warning=FALSE}
-prior.feature_selected.basic <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
-                            data = train.data,
+prior.feature_selected.basic <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia + sex,                            
+                                    data = train.data,
                             family = bernoulli(),
                           prior = c(set_prior("cauchy(40,20)", class="b", coef="age"),
-                          set_prior("inv_gamma(1,1)", class="b", coef="serum_creatinine"),
+                          set_prior("inv_gamma(1,5)", class="b", coef="serum_creatinine"),
                           set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
-                          set_prior("cauchy(0,200)", class="b", coef="serum_sodium")),
+                          set_prior("cauchy(0,4000)", class="b", coef="creatinine_phosphokinase"),
+                          set_prior("cauchy(0,200)", class="b", coef="serum_sodium"),
+                          set_prior("normal(.5, .5)", class="b", coef="anaemia"),
+                          set_prior("normal(.5, .5)", class="b", coef="diabetes"),
+                          set_prior("normal(.5, .5)", class="b", coef="smoking"),
+                          set_prior("normal(.5, .5)", class="b", coef="high_blood_pressure"),
+                          set_prior("normal(.5, .5)", class="b", coef="sex")),
                           refresh = 0,
                           control = list(adapt_delta = 0.99),
                           sample_prior = "only"
                             )
-yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=150)
+yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=25)
 ppc_dens_overlay(y=test.data$DEATH_EVENT, yrep = yrep)
-chain_
+
 ``` 
 
-Use uninformative normal prior
+Then use uninformative normal prior
 ```{r message=FALSE, warning=FALSE}
-prior.feature_selected.noninfo <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
+prior.feature_selected.noninfo <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia + sex,
                             data = train.data,
                             family = bernoulli(),
                           prior = set_prior("normal(0,6000)"),
