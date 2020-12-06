@@ -388,7 +388,7 @@ $$
 ### Linear model with all variables 
 ```{r}
 rhats <- rhat(fit.full)
-color_scheme_set("brightblue") # see help("color_scheme_set")
+color_scheme_set("brightblue")
 mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for model with all variables") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
@@ -397,14 +397,14 @@ mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for model with a
 
 ```{r}
 rhats <- rhat(fit.feature_selected)
-color_scheme_set("brightblue") # see help("color_scheme_set")
+color_scheme_set("brightblue")
 mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for model with selected variables") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ### Hierarchical model with all variables 
 ```{r}
 rhats <- rhat(fit.hierarchical)
-color_scheme_set("brightblue") # see help("color_scheme_set")
+color_scheme_set("brightblue")
 mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for hierarchical model with all variables") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
@@ -412,7 +412,7 @@ mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for hierarchical
 
 ```{r}
 rhats <- rhat(fit.weibull)
-color_scheme_set("brightblue") # see help("color_scheme_set")
+color_scheme_set("brightblue")
 mcmc_rhat(rhats) + yaxis_text(hjust = 1) + ggtitle("Rhat values for Weibull model") + theme(plot.title = element_text(hjust = 0.5))
 ```
 
@@ -581,16 +581,15 @@ loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical))
 
 Leave-one-out cross-validation is a method for estimating pointwise out-of-sample prediction accuracy from a fitted Bayesian model using the log-likelihood evaluated at the posterior simulations of the parameter values [@loo].
 From the PSIS_LOO we can see that the hierarchical model has the highest value compared to the other two models. This value is an indicator of model performance and the best model would be the one with the highest PSIS-LOO. Using the "loo" package we are able to estimate the difference in the models expected predictive accuracy and the function "loo_compare" creates a chart of the models with the one with highest ELPD (smallest LOOIC) first with zero values, meaning that is the best. We can see that the hierarchical model outstand the others and that there is a noticeable difference between the hierarchical model and the other models.
-Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are consdered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. As we can see from the k-values of the 4 models, only the hierarchical one return values greater than 0.7. This fact makes that model less reliable. Regarding the feature selected model, the full model and the weibull one all k-values are below the 0.7 treshold. 
+Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are considered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. As we can see from the k-values of the 4 models, only the hierarchical one return values greater than 0.7. This fact makes that model less reliable. Regarding the feature selected model, the full model and the weibull one all k-values are below the 0.7 threshold. 
 
 The effective sample size (ESS) measures the amount by which autocorrelation in samples increases uncertainty (standard errors) relative to an independent sample. In other words the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The $n_{eff}$ metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter. Usually smaller than the total sample size $N$ so the larger the ratio to $N$, the better. [comment our neff]
 
 ## WIP: Predictive performance assessment (classification)
 
-For actually seeing how the model performs, we split the data in to train and test sets. 
-We have to use different train and test test for the hierarchical, but otherwise the pointwise testing is straigth forward
+For actually seeing how the models perform, we split the data into train and test sets. We have to use different train and test sets for the hierarchical model, but the pointwise accuracy assessment is straightforward in discrete models by checking the prediction classes with test data labels. 
 
-Function for predicting pointwise accuracy
+Function for predicting pointwise accuracy for discrete models
 ```{r}
 predict.pointwise.accuracy <- function(fitted.model, test.data) {
   preds <- round(predict(fitted.model, newdata = test.data)[,1])
@@ -602,7 +601,37 @@ predict.pointwise.accuracy <- function(fitted.model, test.data) {
 }
 ```
 
+For Weibull model, we can only find out the average days for death event to happen as it predicts the distribution for the number of days for death events. To assess its performance, predict function can be used. 
 
+### Full model
+
+```{r}
+predict.pointwise.accuracy(fit.full, test.data)
+```
+
+### Feature selected model
+
+```{r}
+predict.pointwise.accuracy(fit.feature_selected, test.data)
+```
+
+### Hierarchical model
+
+For hierarchical model, age column in the test data should be discretized since this feature is categorized to fit the model.
+```{r}
+discretized.test.data <- test.data
+discretized.test.data$age <- discretize.variable(discretized.test.data$age)
+predict.pointwise.accuracy(fit.hierarchical, discretized.test.data)
+```
+
+### Weibull model
+
+For Weibull model, predict function is used to get the estimate values for the number of days it takes for a death event to happen since the model is continuous. 
+```{r}
+colMeans(predict(fit.weibull, test.data))
+```
+
+After the assessment, it seems that the hierarchical model performs better than the model with all variables and feature selected model when it comes to predict the correct labels (death or survival) for patients. 
 
 ## Prior sensitivity analysis (alternative prior tested)
 
@@ -665,7 +694,7 @@ As we see above, we are first fitting the models by ignoring likelihood. After t
 
 # Conclusion - Disucssion problems and further improvements
 
-In this project we aimed to discover how different values of features for patients could affect the death event given by an heart failure. We explored how different models and different approaches affect the results of our objective. Our first discovery were that some varibles had an higher correlation to the death event and we looked at this relationship when selecting the varibles for our reduced model. The second model consist on a full feature model. The third model is a hierarchical in which we used the same variables we used in the first model, the substaintial change was represnted that now patients are divided into 3 groups based on their age. The last model was created by using a different approach to the dataset, we considered time as outcome variable with respect to death event and we tried to predict the time with respect to death event. We compared the 4 models using different assesment criteria (accuracy, loo, Rhat and Neff) and we can conclude that the hierarchical model performed the best. With the posterior performance assessment we can conclude that the model fairly good and we would recommended this model as an accurate predictior.
+In this project we aimed to discover how different values of features for patients could affect the death event given by an heart failure. We explored how different models and different approaches affect the results of our objective. Our first discovery were that some variables had an higher correlation to the death event and we looked at this relationship when selecting the variables for our reduced model. The second model consist on a full feature model. The third model is a hierarchical in which we used the same variables we used in the first model, the substantial change was represented that now patients are divided into 3 groups based on their age. The last model was created by using a different approach to the dataset, we considered time as outcome variable with respect to death event and we tried to predict the time with respect to death event. We compared the 4 models using different assessment criteria (accuracy, loo, $\hat{R}$ and $n_{eff}$) and we can conclude that the hierarchical model performed the best. With the posterior performance assessment we can conclude that the model fairly good and we would recommended this model as an accurate predictor
 Future improvement could be looking at more advanced future engineering. 
 
 ## Self-reflection
