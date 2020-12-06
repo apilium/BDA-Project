@@ -630,7 +630,7 @@ prior.feature_selected.basic <- brm(formula = DEATH_EVENT ~ age + ejection_fract
                           control = list(adapt_delta = 0.99),
                           sample_prior = "only"
                             )
-yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=25)
+yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=120)
 ppc_dens_overlay(y=test.data$DEATH_EVENT, yrep = yrep)
 
 ``` 
@@ -646,7 +646,7 @@ prior.feature_selected.noninfo <- brm(formula = DEATH_EVENT ~ age + ejection_fra
                           sample_prior = "only"
                             )
 
-yrep <- posterior_predict(prior.feature_selected.noninfo, newdata=test.data, draws=25)
+yrep <- posterior_predict(prior.feature_selected.noninfo, newdata=test.data, draws=120)
 ppc_dens_overlay(y=test.data$DEATH_EVENT, yrep = yrep)
 ```
 As we see above, we are first fitting the models by ignoring likelihood. After that we generate samples based on test data, and see how well our model generates data fitting for the test data. We see, that by using our chosen priors we get better fit, which is expected as we are using more informative priors.
