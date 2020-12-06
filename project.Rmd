@@ -34,7 +34,7 @@ In this project we analyse the data from Heart disease dataset [@origpaper]. We 
 - **Prior sensitivity analysis**
 - **Discussion and conclusion**
 
-In this project, we are observing the dataset from two distinct point of views. The first approach was based on the simple predictive analysis whether patient dies, or survives  the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. Different models are used to carry this analysis and a model comparison is perfomred in order to asses the quality of the analysis. More informations in upcoming chapters. 
+In our study, we are observing the dataset from two distinct point of views. The first approach was based on the simple predictive analysis whether patient dies, or survives  the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. Different models are used to carry out this analysis and a model comparison is perfomred in order to asses the quality of the outcome. More informations in upcoming chapters. 
 
 ## The problem
 Cardiovascular Heart Disease (CHD) is the top reason causing 31% of deaths globally. Pakistan is one of the countries where CHD is increasing significantly, and previous studies do not directly apply to Pakistani area due to different diet patterns.
@@ -225,7 +225,6 @@ The Generalised Linear Model used for every parametrisation is Bernoulli-Logit G
 $$BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | logit^{-1}(\alpha_i + x_i\times \beta))$$
 
 
-
 ### Full model
 
 Stan code for full model can be found in Appendix A.  
@@ -278,8 +277,8 @@ In hierarchical model, we choose age as hyperparameter, because by intuition we 
 ```{r}
 sort(rowSums(abs(x)))
 ```
-First we will discretize age data in to 3 equal depth bins.
 
+First we will discretize age data in to 3 equal depth bins.
 
 ```{r}
 discretize.variable <- function(variable.to.discretize, thresholds = c(55, 70)) {
@@ -497,7 +496,7 @@ ratio<-neff_ratio(fit.weibull)
 mcmc_neff(ratio)
 ```
 
-A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
+The effective sample size (ESS) measures the amount by which autocorrelation in samples increases uncertainty (standard errors) relative to an independent sample. In other words the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The $n_{eff}$ metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter. Usually smaller than the total sample size $N$ so the larger the ratio to $N$, the better. As we can see from the plots, mostly all the ratios of effective sample size to total sample size can be conisdered good. For the feature selected model only one chain out of 4 has a ration below 0.5. Concerning the full model, we obtained that all the chain has a good $N_{eff}/N$ ratio but again we can find a chain whose ration is slighlty below 0.5. A similar conclusion can be derive from the weibull model. Regarding the hierarchical one, we can find that nearly 50% of the chains present a ratio below 0.5, and then further evaluation need to be carried out
 
 ## Posterior predictive checking
 
@@ -530,7 +529,6 @@ train.data <- new.data$train
 test.data <- new.data$test
 pp_check(fit.weibull, nsamples=50, newdata = test.data)
 ```
-
 
 \newpage
 ## Model comparison and interpretation of the results
@@ -583,7 +581,6 @@ Leave-one-out cross-validation is a method for estimating pointwise out-of-sampl
 From the PSIS_LOO we can see that the hierarchical model has the highest value compared to the other two models. This value is an indicator of model performance and the best model would be the one with the highest PSIS-LOO. Using the "loo" package we are able to estimate the difference in the models expected predictive accuracy and the function "loo_compare" creates a chart of the models with the one with highest ELPD (smallest LOOIC) first with zero values, meaning that is the best. We can see that the hierarchical model outstand the others and that there is a noticeable difference between the hierarchical model and the other models.
 Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are consdered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. As we can see from the k-values of the 4 models, only the hierarchical one return values greater than 0.7. This fact makes that model less reliable. Regarding the feature selected model, the full model and the weibull one all k-values are below the 0.7 treshold. 
 
-The effective sample size (ESS) measures the amount by which autocorrelation in samples increases uncertainty (standard errors) relative to an independent sample. In other words the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The $n_{eff}$ metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter. Usually smaller than the total sample size $N$ so the larger the ratio to $N$, the better. [comment our neff]
 
 ## WIP: Predictive performance assessment (classification)
 
@@ -666,7 +663,7 @@ As we see above, we are first fitting the models by ignoring likelihood. After t
 # Conclusion - Disucssion problems and further improvements
 
 In this project we aimed to discover how different values of features for patients could affect the death event given by an heart failure. We explored how different models and different approaches affect the results of our objective. Our first discovery were that some varibles had an higher correlation to the death event and we looked at this relationship when selecting the varibles for our reduced model. The second model consist on a full feature model. The third model is a hierarchical in which we used the same variables we used in the first model, the substaintial change was represnted that now patients are divided into 3 groups based on their age. The last model was created by using a different approach to the dataset, we considered time as outcome variable with respect to death event and we tried to predict the time with respect to death event. We compared the 4 models using different assesment criteria (accuracy, loo, Rhat and Neff) and we can conclude that the hierarchical model performed the best. With the posterior performance assessment we can conclude that the model fairly good and we would recommended this model as an accurate predictior.
-Future improvement could be looking at more advanced future engineering. 
+Future improvement could be looking at more advanced future engineering and different priors. 
 
 ## Self-reflection
 
