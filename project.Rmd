@@ -213,6 +213,7 @@ split.train.test <- function(data, test.size = 0.3) {
   test.data <- heart[-train.indice,]
   return(list("train" = train.data, "test" = test.data))
 }
+set.seed(1)
 new.data <- split.train.test(heart)
 train.data <- new.data$train
 test.data <- new.data$test
@@ -287,7 +288,7 @@ discretize.variable <- function(variable.to.discretize, thresholds = c(55, 70)) 
   variable.to.discretize[variable.to.discretize >= thresholds[2]] = 2
   return(variable.to.discretize)
 }
-
+set.seed(1)
 test.data$age <- discretize.variable(test.data$age)
 train.data$age <- discretize.variable(train.data$age)
 hist(c(train.data$age, test.data$age))
@@ -320,6 +321,7 @@ If sample is not censored, then we are using the cumulative function of previous
 First we need to retrieve the original data with original age values
 
 ```{r}
+set.seed(1)
 new.data <- split.train.test(heart)
 train.data <- new.data$train
 test.data <- new.data$test
@@ -524,6 +526,7 @@ pp_check(fit.hierarchical, nsamples=50, newdata = test.data)
 
 ### Weibull model
 ```{r}
+set.seed(1)
 new.data <- split.train.test(heart)
 train.data <- new.data$train
 test.data <- new.data$test
@@ -637,8 +640,9 @@ prior.feature_selected.basic <- brm(formula = DEATH_EVENT ~ ejection_fraction + 
                           control = list(adapt_delta = 0.99),
                           sample_prior = "only"
                             )
-yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=length(death.events))
+yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=150)
 ppc_dens_overlay(y=test.data$DEATH_EVENT, yrep = yrep)
+chain_
 ``` 
 
 Use uninformative normal prior
@@ -646,7 +650,7 @@ Use uninformative normal prior
 prior.feature_selected.noninfo <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
                             data = train.data,
                             family = bernoulli(),
-                          prior = set_prior("normal(0,3000)"),
+                          prior = set_prior("normal(0,6000)"),
                           refresh = 0,
                           control = list(adapt_delta = 0.99),
                           sample_prior = "only"
