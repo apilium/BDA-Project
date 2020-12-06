@@ -34,7 +34,7 @@ In this project we analyse the data from Heart disease dataset [@origpaper]. We 
 - **Prior sensitivity analysis**
 - **Discussion and conclusion**
 
-In this project, we are observing the dataset from two distinct point of views. The first approach was based on the simple predictive analysis whether patient dies, or survives  the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. Different models are used to carry this analysis and a model comparison is perfomred in order to asses the quality of the analysis. More informations in upcoming chapters. 
+In our study, we are observing the dataset from two distinct point of views. The first approach was based on the simple predictive analysis whether patient dies, or survives  the research follow up period (4 - 285 days), and on the other hand we want to create an actual survival analysis, which takes time and censored variables in to consideration. Different models are used to carry out this analysis and a model comparison is perfomred in order to asses the quality of the outcome. More informations in upcoming chapters. 
 
 ## The problem
 Cardiovascular Heart Disease (CHD) is the top reason causing 31% of deaths globally. Pakistan is one of the countries where CHD is increasing significantly, and previous studies do not directly apply to Pakistani area due to different diet patterns.
@@ -213,6 +213,7 @@ split.train.test <- function(data, test.size = 0.3) {
   test.data <- heart[-train.indice,]
   return(list("train" = train.data, "test" = test.data))
 }
+set.seed(1)
 new.data <- split.train.test(heart)
 train.data <- new.data$train
 test.data <- new.data$test
@@ -223,7 +224,6 @@ test.data <- new.data$test
 The Generalised Linear Model used for every parametrisation is Bernoulli-Logit Generalised Linear Model for the first three models, which is logistic regression. It's expressed in mathematical terms as following:  
 
 $$BernoulliLogitGLM(y|x,\alpha, \beta) = \prod_{1\leq i\leq n} Bernoulli(y_i | logit^{-1}(\alpha_i + x_i\times \beta))$$
-
 
 
 ### Full model
@@ -237,6 +237,7 @@ fit.full <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatini
                           set_prior("inv_gamma(1,5)", class="b", coef="serum_creatinine"),
                           set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
                           set_prior("cauchy(0,200)", class="b", coef="serum_sodium"),
+                          set_prior("cauchy(0,4000)", class="b", coef="creatinine_phosphokinase"),
                           set_prior("normal(.5, .5)", class="b", coef="anaemia"),
                           set_prior("normal(.5, .5)", class="b", coef="diabetes"),
                           set_prior("normal(.5, .5)", class="b", coef="smoking"),
@@ -278,8 +279,8 @@ In hierarchical model, we choose age as hyperparameter, because by intuition we 
 ```{r}
 sort(rowSums(abs(x)))
 ```
-First we will discretize age data in to 3 equal depth bins.
 
+First we will discretize age data in to 3 equal depth bins.
 
 ```{r}
 discretize.variable <- function(variable.to.discretize, thresholds = c(55, 70)) {
@@ -288,7 +289,7 @@ discretize.variable <- function(variable.to.discretize, thresholds = c(55, 70)) 
   variable.to.discretize[variable.to.discretize >= thresholds[2]] = 2
   return(variable.to.discretize)
 }
-
+set.seed(1)
 test.data$age <- discretize.variable(test.data$age)
 train.data$age <- discretize.variable(train.data$age)
 hist(c(train.data$age, test.data$age))
@@ -321,6 +322,7 @@ If sample is not censored, then we are using the cumulative function of previous
 First we need to retrieve the original data with original age values
 
 ```{r}
+set.seed(1)
 new.data <- split.train.test(heart)
 train.data <- new.data$train
 test.data <- new.data$test
@@ -362,6 +364,9 @@ $$\text{ejection fraction} \sim Beta(6,4)$$
 - Serum sodium should be around 135 and 145, but we gave it large variance with (half) cauchy(0,200). Severe symptoms of too high sodium levels start above 160, so this prior gives a lot room to reach fatal levels. 
 $$\text{serum sodium} \sim Cauchy(y|\mu,\sigma) = \dfrac{1}{\pi\sigma}\dfrac{1}{1+((y-\mu)/\sigma)^2}$$
 $$\text{serum sodium} \sim Cauchy(0,200)$$
+- Creatinine phosphokinase regular levels are between 20 and 200, but it can reach in certain coditions even hundreds of thousand. This is why we dont want to limit our priors. We chose 
+
+$$\text{serum sodium} \sim Cauchy(0,4000)$$
 
 - Priors for anemia, smoking, high blood pressure and sex were chosen as uniform beta(1,1). This is because they might get values 0 or 1 with equal probabilities.  
 $$\text{anemia, smoking, high blood pressure, sex} \sim \mathcal{N}(.5,.5)$$  
@@ -497,7 +502,7 @@ ratio<-neff_ratio(fit.weibull)
 mcmc_neff(ratio)
 ```
 
-A detailed comparison is carried at the end of the "Model comparison and interpretation of the results" section.
+The effective sample size (ESS) measures the amount by which autocorrelation in samples increases uncertainty (standard errors) relative to an independent sample. In other words the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The $n_{eff}$ metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter. Usually smaller than the total sample size $N$ so the larger the ratio to $N$, the better. As we can see from the plots, mostly all the ratios of effective sample size to total sample size can be conisdered good. For the feature selected model only one chain out of 4 has a ration below 0.5. Concerning the full model, we obtained that all the chain has a good $N_{eff}/N$ ratio but again we can find a chain whose ration is slighlty below 0.5. A similar conclusion can be derive from the weibull model. Regarding the hierarchical one, we can find that nearly 50% of the chains present a ratio below 0.5, and then further evaluation need to be carried out
 
 ## Posterior predictive checking
 
@@ -525,12 +530,12 @@ pp_check(fit.hierarchical, nsamples=50, newdata = test.data)
 
 ### Weibull model
 ```{r}
+set.seed(1)
 new.data <- split.train.test(heart)
 train.data <- new.data$train
 test.data <- new.data$test
 pp_check(fit.weibull, nsamples=50, newdata = test.data)
 ```
-
 
 \newpage
 ## Model comparison and interpretation of the results
@@ -580,10 +585,15 @@ loo_compare(list(loo.feature_selected, loo.full, loo.hierarchical))
 ```
 
 Leave-one-out cross-validation is a method for estimating pointwise out-of-sample prediction accuracy from a fitted Bayesian model using the log-likelihood evaluated at the posterior simulations of the parameter values [@loo].
+<<<<<<< HEAD
 From the PSIS_LOO we can see that the hierarchical model has the highest value compared to the other two models. This value is an indicator of model performance and the best model would be the one with the highest PSIS-LOO. Using the "loo" package we are able to estimate the difference in the models expected predictive accuracy and the function "loo_compare" creates a chart of the models with the one with highest ELPD (smallest LOOIC) first with zero values, meaning that is the best. We can see that the hierarchical model outstand the others and that there is a noticeable difference between the hierarchical model and the other models.
 Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are considered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. As we can see from the k-values of the 4 models, only the hierarchical one return values greater than 0.7. This fact makes that model less reliable. Regarding the feature selected model, the full model and the weibull one all k-values are below the 0.7 threshold. 
 
 The effective sample size (ESS) measures the amount by which autocorrelation in samples increases uncertainty (standard errors) relative to an independent sample. In other words the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The $n_{eff}$ metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter. Usually smaller than the total sample size $N$ so the larger the ratio to $N$, the better. [comment our neff]
+=======
+From the PSIS_LOO we can see that the hierarchical model has the highest value compared to the other two models. This value is an indicator of model performance and the best model would be the one with the highest PSIS-LOO. Using the "loo" package we are able to estimate the difference in the models expected predictive accuracy and the function "loo_compare" creates a chart of the models with the one with highest ELPD (smallest LOOIC) first with zero values, meaning that is the best. We can see that the hierarchical model outstand the others, despite the difference is not huge.
+Pareto k-values estimates the tail shape which determines the convergence rate of PSIS. K-values less than 0.7 are consdered to be a measure of reliability for the models in question. Values greater than 0.7 could represent a problem for the models, are further evaluation need to be done. As we can see from the k-values of the 4 models, none of the models return values below 0.7. We can state that the measure obtained using the loo package can be considere then reliable and the k-values help us to confirm our claim that the hierarhcical one is the best.
+>>>>>>> fad4afd0d49816feaa63c746af235defaa72a791
 
 ## WIP: Predictive performance assessment (classification)
 
@@ -635,57 +645,44 @@ After the assessment, it seems that the hierarchical model performs better than 
 
 ## Prior sensitivity analysis (alternative prior tested)
 
-We will be using weibull model, because it has the most clear troubles on defining the priors. 
+We will use the model that has most priors for prior sensitivity analysis, the full model. This describes the meaning of prior well.
 
-### 
-
-First use priors that we picked DOESNT WORK?!?! REMOVE??????
-```{r}
-# prior.weibull.basic <- brm(formula = time | cens(DEATH_EVENT) ~ age  + anaemia + high_blood_pressure,
-#            data = train.data,
-#            family = weibull(),
-#            prior = c(set_prior("cauchy(40, 20)", class="b", coef="age"),
-#                      prior_string("normal(.5, .5)", class="b", coef="anaemia"),
-#                      prior_string("normal(.5, .5)", class="b", coef="high_blood_pressure")),
-#                       refresh=0,
-#                       sample_prior = 'only',
-#                       control = list(adapt_delta = 0.999))
-
-#death.events <- train.data[train.data$DEATH_EVENT == 1, ncol(train.data)-1]
-#yrep <- brms::posterior_predict(prior.weibull.basic, newdata = test.data, draws=length(death.events))
-#ppc_dens_overlay(y=death.events, yrep = yrep)
-```
-
-
-Use priors that we previously chose
+First let's use priors that we have chosen to be informative.
 ```{r message=FALSE, warning=FALSE}
-prior.feature_selected.basic <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
-                            data = train.data,
+prior.feature_selected.basic <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia + sex,                            
+                                    data = train.data,
                             family = bernoulli(),
                           prior = c(set_prior("cauchy(40,20)", class="b", coef="age"),
-                          set_prior("inv_gamma(1,1)", class="b", coef="serum_creatinine"),
+                          set_prior("inv_gamma(1,5)", class="b", coef="serum_creatinine"),
                           set_prior("beta(6,4)", class="b", coef="ejection_fraction"),
-                          set_prior("cauchy(0,200)", class="b", coef="serum_sodium")),
+                          set_prior("cauchy(0,4000)", class="b", coef="creatinine_phosphokinase"),
+                          set_prior("cauchy(0,200)", class="b", coef="serum_sodium"),
+                          set_prior("normal(.5, .5)", class="b", coef="anaemia"),
+                          set_prior("normal(.5, .5)", class="b", coef="diabetes"),
+                          set_prior("normal(.5, .5)", class="b", coef="smoking"),
+                          set_prior("normal(.5, .5)", class="b", coef="high_blood_pressure"),
+                          set_prior("normal(.5, .5)", class="b", coef="sex")),
                           refresh = 0,
                           control = list(adapt_delta = 0.99),
                           sample_prior = "only"
                             )
-yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=length(death.events))
+yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=120)
 ppc_dens_overlay(y=test.data$DEATH_EVENT, yrep = yrep)
+
 ``` 
 
-Use uninformative normal prior
+Then use uninformative normal prior
 ```{r message=FALSE, warning=FALSE}
-prior.feature_selected.noninfo <- brm(formula = DEATH_EVENT ~ ejection_fraction + serum_creatinine + serum_sodium + age,
+prior.feature_selected.noninfo <- brm(formula = DEATH_EVENT ~ age + ejection_fraction + serum_creatinine + serum_sodium + high_blood_pressure + creatinine_phosphokinase + diabetes + smoking + anaemia + sex,
                             data = train.data,
                             family = bernoulli(),
-                          prior = set_prior("normal(0,3000)"),
+                          prior = set_prior("normal(0,6000)"),
                           refresh = 0,
                           control = list(adapt_delta = 0.99),
                           sample_prior = "only"
                             )
 
-yrep <- posterior_predict(prior.feature_selected.noninfo, newdata=test.data, draws=25)
+yrep <- posterior_predict(prior.feature_selected.noninfo, newdata=test.data, draws=120)
 ppc_dens_overlay(y=test.data$DEATH_EVENT, yrep = yrep)
 ```
 As we see above, we are first fitting the models by ignoring likelihood. After that we generate samples based on test data, and see how well our model generates data fitting for the test data. We see, that by using our chosen priors we get better fit, which is expected as we are using more informative priors.
@@ -694,8 +691,13 @@ As we see above, we are first fitting the models by ignoring likelihood. After t
 
 # Conclusion - Disucssion problems and further improvements
 
+<<<<<<< HEAD
 In this project we aimed to discover how different values of features for patients could affect the death event given by an heart failure. We explored how different models and different approaches affect the results of our objective. Our first discovery were that some variables had an higher correlation to the death event and we looked at this relationship when selecting the variables for our reduced model. The second model consist on a full feature model. The third model is a hierarchical in which we used the same variables we used in the first model, the substantial change was represented that now patients are divided into 3 groups based on their age. The last model was created by using a different approach to the dataset, we considered time as outcome variable with respect to death event and we tried to predict the time with respect to death event. We compared the 4 models using different assessment criteria (accuracy, loo, $\hat{R}$ and $n_{eff}$) and we can conclude that the hierarchical model performed the best. With the posterior performance assessment we can conclude that the model fairly good and we would recommended this model as an accurate predictor
 Future improvement could be looking at more advanced future engineering. 
+=======
+In this project we aimed to discover how different values of features for patients could affect the death event given by an heart failure. We explored how different models and different approaches affect the results of our objective. Our first discovery were that some varibles had an higher correlation to the death event and we looked at this relationship when selecting the varibles for our reduced model. The second model consist on a full feature model. The third model is a hierarchical in which we used the same variables we used in the first model, the substaintial change was represnted that now patients are divided into 3 groups based on their age. The last model was created by using a different approach to the dataset, we considered time as outcome variable with respect to death event and we tried to predict the time with respect to death event. We compared the 4 models using different assesment criteria (accuracy, loo, Rhat and Neff) and we can conclude that the hierarchical model performed the best. With the posterior performance assessment we can conclude that the model fairly good and we would recommended this model as an accurate predictior.
+Future improvement could be looking at more advanced future engineering and different priors. 
+>>>>>>> fad4afd0d49816feaa63c746af235defaa72a791
 
 ## Self-reflection
 
