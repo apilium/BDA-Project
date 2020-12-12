@@ -515,7 +515,7 @@ Weibull model has a lot of variance but as the underlying distribution is multim
 ### Feature selected model
 
 ```{r}
-pp_check(fit.feature_selected, nsamples=50, newdata = test.data)
+pp_check(fit.feature_selected, nsamples=50, newdata = test.data, title="jou")
 ```
 
 ### Full model
@@ -662,7 +662,18 @@ prior.feature_selected.basic <- brm(formula = DEATH_EVENT ~ age + ejection_fract
                           control = list(adapt_delta = 0.99),
                           sample_prior = "only"
                             )
-yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=120)
+yrep <- brms::posterior_predict(prior.feature_selected.basic, newdata = test.data, draws=50)
+yrep.new <- apply(yrep, 2, FUN = median)
+
+df <- data.frame("yrep" = yrep.new, "test" = test.data$DEATH_EVENT)
+ggplot(data=df) + geom_histogram(aes(y=yrep, fill="red", alpha=0.2)) + geom_histogram(aes(y=test, fill="blue", alpha=0.2))
+
+
+plot(hist(yrep.new, plot = FALSE), col=c1)
+plot(hist(test.data$DEATH_EVENT, plot = FALSE), col=c2, add=TRUE)
+
+
+ppc_hist(y=test.data$DEATH_EVENT, yrep = yrep)
 ppc_dens_overlay(y=test.data$DEATH_EVENT, yrep = yrep)
 
 ``` 
