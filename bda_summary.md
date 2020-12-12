@@ -1,13 +1,14 @@
+
 Estimation of the difference in the expected log predictive density (ELPD) on the new data.
 
 logistic regression model <- problem with unbalanced response, plot of posterior predictive estimate (is there an overlap)
 
-#R̂
+# R̂
 
 One way to monitor whether a chain has converged to the equilibrium distribution is to compare its behavior to other randomly initialized chains. R̂ statistic measures the ratio of the average variance of draws within each chain to the variance of the pooled draws across chains; if all chains are at equilibrium, these will be the same and R̂ will be one. If the chains have not converged to a common distribution, the R̂ statistic will be greater than one. The R̂ value basically compares the within sample variance and the between sample variance. If the chains have not converged, there is notable difference in these variances and the R̂ value becomes big. Using this kind of measure is the most effective for quantities whose marginal posterior distributions are approximately normal. The Rhat measures ratio of variances within chain with total variance estimate son that a value of 1 indicates that the chains have converged. Greater than 1, should be less than 1.05. 
 If R̂ is not near 1 for all of them, continue the simulation runs (perhaps altering the simulation algorithm itself to make the simulations more efficient). The condition of R̂ being ‘near’ 1 depends on the problem at hand, but we generally have been satisfied with setting 1.1 as a threshold.
 
-#The Metropolis algorithm 
+# The Metropolis algorithm 
 
 Markov chain simulation based method that is used for sampling from Bayesian posterior distributions, with the aim to converge to a specific distribution. It is based on the concept of random walk with an acceptance/rejection rule to converge to the specified target distribution. Metropolis-Hastings algorithm is a method that can be used to obtain random samples from some probability distribution when sampling directly from the distribution is impossible or difficult. The algorithm is initiated by choosing the starting point and probability density from which the samples are drawn (proposal/jumping density). In each iteration a new candidate x’ is drawn, acceptance ratio (r) is calculated and the we set the value of the current iterative value of x to either x’ (accept with probability r) or previous iteratrive value of x (reject with probability 1-r). The iteration is continued until the values converge.
 First there is a warmup phase which is intended to move the simulations from their possibly unrepresen- tative initial values to something closer to the region of parameter space where the log posterior density is close to its expected value. Also during warmup there needs to be some procedure to set the algorithm’s tuning parameters; this can be done using information gathered from the warmup runs.
@@ -15,9 +16,14 @@ Third is the sampling phase, which ideally is run until multiple chains have mix
 Using an informative normal distribution for the prior adds to the tail-log-concavity of the 28
 posterior density, which leads to a quicker MCMC mixing time. But the informative prior does not represent a tradeoff of model bias vs. computational efficiency. On the other hand, the prior can be weak in the context of the likelihood while still guaranteeing a log-concave tail
 
+# No-U-Turn Hamiltonian Monte Carlo
+By default Stan uses the No-U-Turn Hamiltonian Monte Carlo Method (NUTS). 
 
+Hamiltonian Monte Carlo method is a Markov chain Monte Carlo method for obtaining sequence of random samples which converge to target probability distribution. HMC corresponds to Metropolis-Hastings algorithm with Hamiltonian dynamics. NUTS can be understood through example:
 
-#Effective number of simulation draws
+Set ball rolling with randomly chosen kinetic energy in to certain direction. After ball has rolled to one direction long enough, it will start rolling backwards because of rolling to uphill. This causes ball to do U-turn, and we can stop sampling. Then we perform twice as many steps to the opposite direction of the original, and stop again after U-turn. This assumes that the ball has gone through the whole parameter space, and now we can choose the best point proposal that was accepted. If no proposal was accepted, we do this again. 
+
+# Effective number of simulation draws
 
 The effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. The neff metric used in Stan is based on the ability of the draws to estimate the true mean value of the parameter, which is related to (but not necessarily equivalent to) estimating other functions of the draws. Because the draws within a Markov chain are not independent if there is autocorrelation, the effective sample size, neff, is usually smaller than the total sample size, N. 
 An useful heuristic is to worry about any neff/N less than 0.1. One important thing to keep in mind is that these ratios will depend not only on the model being fit but also on the particular MCMC algorithm used.
@@ -29,7 +35,7 @@ We can use effective sample size neff to give us a sense of the precision obtain
 Even if an iterative simulation appears to converge and has passed all tests of con- vergence, it still may actually be far from convergence if important areas of the target distribution were not captured by the starting distribution and are not easily reachable by the simulation algorithm.
 Monitor function provided both bulk-ESS and tail- ESS. Bulk-ESS measures the center of the distribution and tail-ESS measures for interval estimates. ESS scores were considered good if they were over 100 per chain. ESS value were also low with first versions of the model.
 
-#Random informations taken from the "Bayesian workflow" paper
+# Random informations taken from the "Bayesian workflow" paper
 
 We need to clearly separate concepts of Bayesian inference from Bayesian data analysis and, critically, from full Bayesian workflow. Bayesian inference is just the formulation and computation of conditional probability or probability densities, p(θ|y) ∝ p(θ)p(y|θ). 
 Bayesian workflow includes the three steps of model building, inference, and model checking/improvement, along with the comparison of different models, not just for the purpose of model choice or model averaging but more importantly to better understand these models. In a typical Bayesian workflow we end up fitting a series of models, some of which are in retrospect poor choices. 
