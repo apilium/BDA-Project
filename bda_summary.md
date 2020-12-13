@@ -1,12 +1,10 @@
-
-
 Estimation of the difference in the expected log predictive density (ELPD) on the new data.
 
 logistic regression model <- problem with unbalanced response, plot of posterior predictive estimate (is there an overlap)
 
 # R̂
 
-One way to monitor whether a chain has converged to the equilibrium distribution is to compare its behavior to other randomly initialized chains. R̂ statistic measures the ratio of the average variance of draws within each chain to the variance of the pooled draws across chains; if all chains are at equilibrium, these will be the same and R̂ will be one. If the chains have not converged to a common distribution, the R̂ statistic will be greater than one. The R̂ value basically compares the within sample variance and the between sample variance. If the chains have not converged, there is notable difference in these variances and the R̂ value becomes big. Using this kind of measure is the most effective for quantities whose marginal posterior distributions are approximately normal. The Rhat measures ratio of variances within chain with total variance estimate so that a value of 1 indicates that the chains have converged. Greater than 1, should be less than 1.05. 
+One way to monitor whether a chain has converged to the equilibrium distribution is to compare its behavior to other randomly initialized chains. R̂ statistic measures the ratio between the average variance of draws within each chain and the variance of the pooled draws across chains; if all chains are at equilibrium, these will be the same and R̂ will be one. If the chains have not converged to a common distribution, the R̂ statistic will be greater than one. The R̂ value basically compares the within sample variance and the between sample variance. If the chains have not converged, there is notable difference in these variances and the R̂ value becomes big. Using this kind of measure is the most effective for quantities whose marginal posterior distributions are approximately normal. The Rhat measures ratio of variances within chain with total variance estimate so that a value of 1 indicates that the chains have converged. Greater than 1, should be less than 1.05. 
 If R̂ is not near 1 for all of them, continue the simulation runs (perhaps altering the simulation algorithm itself to make the simulations more efficient). The condition of R̂ being ‘near’ 1 depends on the problem at hand, but we generally have been satisfied with setting 1.1 as a threshold.
 
 # The Metropolis algorithm 
@@ -48,6 +46,25 @@ Once a model has been fit, the workflow of evaluating that fit is more convolute
 Posterior predictive checking is analogous to prior predictive checking, but the parameter draws used in the simulations come from the posterior distribution rather than the prior. While prior predictive checking is a way to understand a model and the implications of the specified priors, posterior predictive checking also allows one to examine the fit of a model to real data.
 When comparing simulated datasets from the posterior predictive distribution to the actual dataset, if the dataset we are analyzing is unrepresentative of the posterior predictive distribution, this indicates a failure of the model to describe an aspect of the data. The most direct checks compare the simulations from the predictive distribution to the full distribution of the data or a summary statistic computed from the data or subgroups of the data, especially for groupings not included in the model. We may tolerate that the model fails to capture certain aspects of the data or it may be essential to invest in improving the mode
 
+# LOO
+
+Leave-one-out cross-validation (LOO) is a method for estimating pointwise out-of-sample prediction accuracy from a fitted Bayesian model using the log-likelihood evaluated at the posterior simulations of the parameter values. After fitting a Bayesian model we often want to measure its predictive accuracy,for its own sake or for purposes of model comparison, selection, or averaging. Cross-validation is an approache to estimating out-of-sample predictive accuracy using within-sample fits. In this article we consider computations using the log-likelihood evaluated at the usual posterior simulations of the parameters. Exact cross-validation requires re-fitting the model with different training sets. Approximate leave-one-out cross-validation (LOO) can be computed easily using importance sampling, but the resulting estimate is noisy, as the variance of the importance weights can be large or even infinite. We use the Pareto smoothed importance sampling (PSIS) an approach that provides a more accurate and reliable estimate by fitting a Pareto distribution to the upper tail of the distribution of the importance weights. PSIS allows us to compute LOO using importance weights that would otherwise be unstable.
+ELPD = expected log pointwise predictive density for new data
+LPD = log pointwise predictive density 
+The lpd of observed data is an overestimate of the elpd for future data
+We can improve the LOO estimate using Pareto smoothed importance sampling, which applies a smoothing procedure to the importance weights.  The distribution of the importance weights used in LOO may have a long right tail. We use the empirical Bayes estimate to fit a generalized Pareto distribution to the tail (20% largest importance ratios). By examining the shape parameter k of the fitted Pareto distribution, we are able to obtain sample based estimates of the existence of the moments
+
+The estimated shape parameter Khat of the generalised Pareto distribution can be used to asses the reliability of the estimate.
+
+• If k < 1/2 , the variance of the raw importance ratios is finite, the central limit theorem holds, and the estimate converges quickly.
+• If k is between 12 and 1, the variance of the raw importance ratios is infinite but the mean exists, the generalized central limit theorem for stable distributions holds, and the convergence of the estimate is slower. The variance of the PSIS estimate is finite but may be large.
+• If k > 1, the variance and the mean of the raw ratios distribution do not exist. The variance of the PSIS estimate is finite but may be large
+
+when khat exceeds 0.7 the user should consider sampling directly from p(θs|y−i) for the problematic i, use K-fold cross-validation, or use a more robust model. The additional computational cost of sampling directly from each p(θs|y−i) is approximately the same as sampling from the full posterior, but it is recommended if the number of problematic data points is not too high.
+As the data can be divided in many ways into K groups it introduces additional variance in the
+estimates, which is also evident from our experiments. This variance can be reduced by repeating K-fold-CV several times with different permutations in the data division, but this will further increase the computational cost.
+
+
 # Teemu slides
 ## Feature selection
 - done to reduce the amount of parameters that are being estimated. 
@@ -87,6 +104,9 @@ When comparing simulated datasets from the posterior predictive distribution to 
 
 Nicola's part:
 
+
+# Nicola slides:
+We chose to use BRMS for modeling (Bayesian Regression Models for Stan) that’s an interface to fit Bayesian generalized (non-)linear multivariate models using Stan. The Generalised Linear Model used is Bernoulli-Logit Generalised Linear Model, which is logistic regression. First model: all features excluding TIME, second model: selected features strongest correlation, third model hierarchical with age as hyperparameter, there will be three groups since, by intuition, we thought that different aged people tend to have different medical conditions by default.
 Rhat is a convergence diagnostic for Markov chain Monte Carlo and n_eff or ESS is an estimate of efficiency of the Markov chain Monte Carlo posterior sample for estimating some specific expectation.
 Maximum treedepth: sarnings about hitting the maximum treedepth are not as serious as warnings about divergent transitions. While divergent transitions are a validity concern, hitting the maximum treedepth is an efficiency concern. Configuring the No-U-Turn-Sampler (the variant of HMC used by Stan) involves putting a cap on the depth of the trees that it evaluates during each iteration (for details on this see the Hamiltonian Monte Carlo Sampling chapter in the Stan manual). This is controlled through a maximum depth parameter max_treedepth. When the maximum allowed tree depth is reached it indicates that NUTS is terminating prematurely to avoid excessively long execution time.
 
