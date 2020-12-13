@@ -1,4 +1,5 @@
 
+
 Estimation of the difference in the expected log predictive density (ELPD) on the new data.
 
 logistic regression model <- problem with unbalanced response, plot of posterior predictive estimate (is there an overlap)
@@ -67,6 +68,22 @@ When comparing simulated datasets from the posterior predictive distribution to 
 - The plotting was done by kernel density estimation, for which reason we see our discrete DEATH_EVENT variable as continuous. 
 - Each line is individual prediction with our fitted model
 - The key take away from this is, that by choosing priors we get less variance between each measurement, and we get more consistent results
+
+## Weibull diagnostics
+- R: 
+- Effective sample size: 80 individual samples are worth 100 from MCMC
+- Divergent chains: if we have too big step according to target distribution resolution, there might be. We have 0.
+- LOO (leave one out CV)
+  - ELPD (expected log pointwise density): sum of N probability densities, can be lower than 1 (negative ELPD) or higher than 1 (positive ELPD)
+  - ELPD SE: SE of N components that ELPD is calculated over. Small N leads to overoptimistic SE
+  - p_loo (p_eff): how much harder is it to predict future data (CV) than observed data. 
+    - p_loo < p is good.
+  - Pareto k: how far leave-one-out distribution is from full distribution. k higher when its further from full distribution.
+    - k < 0.5, elpd estimated with high acc
+    - 0.5 < k < 0.7 less accuracy, but still ok
+    - k > 0.7 elpd_loo isn't useful estimate
+## Weibull intrepretation
+- 
 
 Nicola's part:
 
