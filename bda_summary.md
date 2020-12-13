@@ -47,6 +47,26 @@ Once a model has been fit, the workflow of evaluating that fit is more convolute
 Posterior predictive checking is analogous to prior predictive checking, but the parameter draws used in the simulations come from the posterior distribution rather than the prior. While prior predictive checking is a way to understand a model and the implications of the specified priors, posterior predictive checking also allows one to examine the fit of a model to real data.
 When comparing simulated datasets from the posterior predictive distribution to the actual dataset, if the dataset we are analyzing is unrepresentative of the posterior predictive distribution, this indicates a failure of the model to describe an aspect of the data. The most direct checks compare the simulations from the predictive distribution to the full distribution of the data or a summary statistic computed from the data or subgroups of the data, especially for groupings not included in the model. We may tolerate that the model fails to capture certain aspects of the data or it may be essential to invest in improving the mode
 
+# Teemu slides
+## Feature selection
+- done to reduce the amount of parameters that are being estimated. 
+  - Find correlating ones
+- Positively correlating:
+  - Age, serum creatinine
+- Negatively correlating
+  - ejection fraction, serum sodium
+  - DISCARDED TIME
+ ##  Prior selection
+ - Priors according to references
+   - Check average range of levels, check maximum lethal level
+ - Half-Cauchy for age is actually not very good, as it might have too long tail
+ - Inverse gamma distribution should be centered around mean values we found
+ ## Prior sensitivity analysis
+ - Fit model based on only priors
+ - Perform posterior predictive checking
+- The plotting was done by kernel density estimation, for which reason we see our discrete DEATH_EVENT variable as continuous. 
+- Each line is individual prediction with our fitted model
+- The key take away from this is, that by choosing priors we get less variance between each measurement, and we get more consistent results
 
 Nicola's part:
 
