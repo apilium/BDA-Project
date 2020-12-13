@@ -102,8 +102,6 @@ estimates, which is also evident from our experiments. This variance can be redu
 ## Weibull intrepretation
 - 
 
-Nicola's part:
-
 
 # Nicola slides:
 We chose to use BRMS for modeling (Bayesian Regression Models for Stan) that’s an interface to fit Bayesian generalized (non-)linear multivariate models using Stan. The Generalised Linear Model used is Bernoulli-Logit Generalised Linear Model, which is logistic regression. First model: all features excluding TIME, second model: selected features strongest correlation, third model hierarchical with age as hyperparameter, there will be three groups since, by intuition, we thought that different aged people tend to have different medical conditions by default.
