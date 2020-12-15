@@ -332,13 +332,16 @@ test.data <- new.data$test
 
 Then we can fit the model
 ```{r message=FALSE, warning=FALSE}
-fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ age  + anaemia + high_blood_pressure,
+train.data$DEATH_EVENT <- ifelse(train.data$DEATH_EVENT == 1, 0, 1)
+y2 <- rep(290, nrow(train.data))
+train.data$y2 <- y2
+fit.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ age + high_blood_pressure + anaemia,
            data = train.data,
            family = weibull(),
-           prior = c(set_prior("cauchy(40, 20)", class="b", coef="age"),
-                     prior_string("normal(.5, .5)", class="b", coef="anaemia"),
-                     prior_string("normal(.5, .5)", class="b", coef="high_blood_pressure")),
-           refresh=0
+           c(set_prior("cauchy(40,20)", class="b", coef="age"),
+                          set_prior("normal(.5,.5)", class="b", coef="high_blood_pressure"),
+                          set_prior("normal(.5,.5)", class="b", coef="anaemia")),
+           control = list(adapt_delta = 0.95, max_treedepth = 12)
 )
 ```
 
@@ -635,6 +638,90 @@ predict.pointwise.accuracy(fit.hierarchical, discretized.test.data)
 For Weibull model, predict function is used to get the estimate values for the number of days it takes for a death event to happen since the model is continuous. 
 ```{r}
 colMeans(predict(fit.weibull, test.data))
+survived <- heart
+survived <- survived[order(survived$time),]
+s <- within(survived, rm(time))
+
+library(reshape2)
+library(dplyr)
+
+my_ecdf <- ecdf(survived$time[survived$DEATH_EVENT==1])
+
+df <- data.frame(x = survived$time, 
+                 y = 1 - my_ecdf(survived$time))
+
+p <- brms::posterior_predict(fit.weibull, newdata = s, draws=25)
+p <- melt(p)
+
+p_ecdf <- ecdf(p$value[p$va])
+p.df <- data.frame(x = p$value,
+                   y = 1 - p_ecdf(p$value),
+                   z = p$Var2)
+
+p.df <- arrange(p.df, z, group_by = x)
+
+ggplot() + geom_line(data=df, aes(x,y)) + xlab("Days since start") + ylab("P(survival)")
+
+t <- within(test.data, rm(time))
+
+pp_check(fit.weibull, newdata = t)
+
+library(survival)
+library(ggfortify)
+fit <- survfit(Surv(time, DEATH_EVENT) ~ 1, data=heart)
+fit.anemia <- survfit(Surv(time, DEATH_EVENT) ~ anaemia, data=heart)
+
+autoplot(fit, xlab = "Time since start", ylab = "P(survival)", censor.colour = "red")
+autoplot(fit.anemia, xlab = "Time since start", ylab = "P(survival)", censor.colour = "red")
+
+est <- brms::posterior_predict(fit.weibull)
+ppc_dens_overlay(ifelse(train.data$time==1,0,1), yrep = est)
+
+status <- ifelse(train.data$DEATH_EVENT == 0, , 0)
+bayesplot::ppc_km_overlay(y=train.data$time,
+                          yrep = brms::posterior_predict(f.weibull),
+                          status_y = train.data$DEATH_EVENT)
+
+
+## Calculate survivalibity for first 300 days
+f <- file('weibull.stan')
+writeLines(stancode(fit.weibull), f)
+close(f)
+
+f.weibull <- brm(formula = time | cens(DEATH_EVENT) ~ age + high_blood_pressure + anaemia,
+           data = train.data,
+           family = weibull(),
+           c(set_prior("cauchy(40,20)", class="b", coef="age"),
+                          set_prior("normal(.5,.5)", class="b", coef="high_blood_pressure"),
+                          set_prior("normal(.5,.5)", class="b", coef="anaemia"))
+)
+  
+ps_mean <- fitted(f.weibull, summary = FALSE)
+ps_mean <- apply(ps_mean, 1, FUN=mean)
+ps_shape <- as.vector(as.matrix(f.weibull, pars = "^shape$"))
+library(lmfor)
+
+ps_scale <- scaleDGMean1(ps_mean, ps_shape)
+
+t <- seq(300)
+k <- 0.91
+
+v <- c()
+for(x in t) {
+  print(exp(-(ps_shape*x)^ps_scale))
+}
+
+
+
+est <- brms::posterior_predict(fit.weibull)
+est.mean <- apply(est, 2, mean)
+
+
+
+mu <- mean(train.data$time)
+lambda <- exp(6) / gamma(1 + 1/k)
+
+
 ```
 
 After the assessment, it seems that the hierarchical model performs better than the model with all variables and feature selected model when it comes to predict the correct labels (death or survival) for patients. 
@@ -674,7 +761,13 @@ plot(hist(test.data$DEATH_EVENT, plot = FALSE), col=c2, add=TRUE)
 
 
 ppc_hist(y=test.data$DEATH_EVENT, yrep = yrep)
-ppc_dens_overlay(y=test.data$DEATH_EVENT, yrep = yrep)
+ppc_dens_overlay(y=ifelse(train.data$DEATH_EVENT==1,0,1), yrep = posterior_predict(fit.weibull), xlim(0,300))
+
+
+p <- posterior_predict(fit.weibull, newdata=test.data)
+p <- p[p<500,]
+
+ppc_dens_overlay(y=ifelse(test.data$DEATH_EVENT == 1, 0, 1), yrep = p, xlim=300)
 
 ``` 
 
