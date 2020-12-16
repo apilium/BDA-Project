@@ -65,7 +65,7 @@ The estimated shape parameter Khat of the generalised Pareto distribution can be
 • If k is between 1/2 and 1, the variance of the raw importance ratios is infinite but the mean exists, the generalized central limit theorem for stable distributions holds, and the convergence of the estimate is slower. The variance of the PSIS estimate is finite but may be large.
 • If k > 1, the variance and the mean of the raw ratios distribution do not exist. The variance of the PSIS estimate is finite but may be large
 
-when khat exceeds 0.7 the user should consider sampling directly from p(θs|y−i) for the problematic i, use K-fold cross-validation, or use a more robust model. The additional computational cost of sampling directly from each p(θs|y−i) is approximately the same as sampling from the full posterior, but it is recommended if the number of problematic data points is not too high.
+when khat exceeds 0.7 the user should consider sampling directly from p(θs|y−i) (leave-one-out predictive density without that data) for the problematic i, use K-fold cross-validation, or use a more robust model. The additional computational cost of sampling directly from each p(θs|y−i) is approximately the same as sampling from the full posterior, but it is recommended if the number of problematic data points is not too high.
 As the data can be divided in many ways into K groups it introduces additional variance in the
 estimates, which is also evident from our experiments. This variance can be reduced by repeating K-fold-CV several times with different permutations in the data division, but this will further increase the computational cost.
 
@@ -108,7 +108,7 @@ estimates, which is also evident from our experiments. This variance can be redu
 
 
 # Nicola slides:
-To proceed our bayesian workflow we designed 3 models and we chose to use BRMS for modeling that’s an interface to fit Bayesian generalized (non-)linear multivariate models using Stan. The Generalised Linear Model used is Bernoulli-Logit, which is logistic regression. First model: all features excluding TIME, second model: selected features strongest correlation with DEATH_EVENT, third model hierarchical with age as hyperparameter, there will be three groups since, by intuition, we thought that different aged people tend to have different medical conditions by default.
+To proceed our bayesian workflow we designed 3 models and we chose to use BRMS for modeling that’s an interface to fit Bayesian generalized (non-)linear multivariate models using Stan. The Generalised Linear Model used is Bernoulli-Logit, which is logistic regression. First model: all features excluding TIME, second model: selected features strongest correlation with DEATH_EVENT, third model hierarchical with age as a grouping feature, there will be three groups since, by intuition, we thought that different aged people tend to have different medical conditions by default.
 After fitting all these three models we asses the convergence using different measures. The first measure we investigated was the Rhat, that is a convergence diagnostic for Markov chain Monte Carlo. R̂ statistic measures the ratio between the average variance of draws within each chain and the variance of the pooled draws across chains; if all chains are at equilibrium, R̂ will be one. We had a look also at the effective sample size is an estimate of the number of independent draws from the posterior distribution of the estimand of interest. Because the draws within a Markov chain are not independent if there is autocorrelation, the effective sample size, neff, is usually smaller than the total sample size, N. We made sure that there werent divergent chains and the maximum tree depth only reached using the hierarchical model.
 A model comparison have been carried out using the loo package for the estimation of elpd that is the expected log pointwise predictive density for new data and the k-values. The estimated shape parameter of the generalised Pareto distribution can be used to asses the reliability of the estimate. We want those values to be less than 0.7 to consider the estimation of elpd reliable.
  
@@ -117,8 +117,31 @@ NUTS generates a proposal by starting at an initial position determined by the p
 •the NUTS criterion  is satisfied for a new subtree or the completed tree, or
 •the depth of the completed tree hits the maximum depth allowed.
 
-Concluding our study we can say that the feature selected model is the best one in this case. We believe there is room for improvements such as: more advance feature engineering, use of different priors, more accurate estimation of the predictive performance for new data using loo cross validation and calibration of the predictions. In addition the weibull model gave us interesting insight on how a dataset can be seen from different point of view a more ehaustive and comprehensive survival analysis can be subject for further studies.
+Concluding our study we can say that the feature selected model is the best one in this case. We believe there is room for improvements such as: more advance feature engineering, use of different priors, more accurate estimation of the predictive performance for new data and more accurate calibration of the predictions. In addition the weibull model gave us interesting insight on how a dataset can be seen from different point of view and more ehaustive and comprehensive survival analysis can be subject for further studies.
 We want to leave our contact details if someone is interested in having additional informations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
