@@ -1,3 +1,4 @@
+
 Estimation of the difference in the expected log predictive density (ELPD) on the new data.
 
 logistic regression model <- problem with unbalanced response, plot of posterior predictive estimate (is there an overlap)
@@ -71,26 +72,42 @@ estimates, which is also evident from our experiments. This variance can be redu
 
 # Teemu slides
 ## Feature selection
+- All of the features can be seen on the right side
 - done to reduce the amount of parameters that are being estimated. 
   - Find correlating ones
 - Positively correlating:
   - Age, serum creatinine
 - Negatively correlating
   - ejection fraction, serum sodium
-  - DISCARDED TIME
  ##  Prior selection
+ - Before prior selection, went through each measurement the data set
+   - find average measurement levels
+   - find extreme levels / lethal levels
+   - most measurements are blood level measurements
  - Priors according to references
    - Check average range of levels, check maximum lethal level
- - Half-Cauchy for age is actually not very good, as it might have too long tail
- - Inverse gamma distribution should be centered around mean values we found
+ - Half-Cauchy
+   - Non-negative
+   - For most blood measurements
+   - Long tail, good for blood measurements because they can reach high levels
+   - Maybe too long tail for age
+ - Inverse gamma
+   - quickly decaying, good for measurements that have smaller variance
+ - Normal distribution
+   - uniform probabilities for binary values
  ## Prior sensitivity analysis
- - Fit model based on only priors
- - Perform posterior predictive checking
-- The plotting was done by kernel density estimation, for which reason we see our discrete DEATH_EVENT variable as continuous. 
-- Each line is individual prediction with our fitted model
+ - We compared original priors with non informative gaussian
+ - First we fit model based on only priors
+ - Then we perform posterior predictive checking on the model
+ - We are estimating death event, which is either 1, the patient died, or 0 patient survived
+- Each blue line represents prediction for the distribution of data samples
+  - the lines are continuous because we used kernel density estimation which smooths the areas between 1 and 0
 - The key take away from this is, that by choosing priors we get less variance between each measurement, and we get more consistent results
 
 ## Weibull diagnostics
+- All of the values are OK
+
+
 - R: 
 - Effective sample size: 80 individual samples are worth 100 from MCMC
 - Divergent chains: if we have too big step according to target distribution resolution, there might be. We have 0.
@@ -103,8 +120,17 @@ estimates, which is also evident from our experiments. This variance can be redu
     - k < 0.5, elpd estimated with high acc
     - 0.5 < k < 0.7 less accuracy, but still ok
     - k > 0.7 elpd_loo isn't useful estimate
+
 ## Weibull intrepretation
-- 
+- Estimating survival function was hard
+  - Decided to estimate censoring events with respect to time instead of survival function
+- On the graph on the left, we see on the y-axis the proportion of people who are not censored, and on the x-axis we see the time
+  - The light blue lines are our draws from the estimated distribution yrep
+  - There is trend in censoring events: For the first 80 days most people stay with the study, and then after that contact is lost with the patients. 
+- On the right side we see posterior predictive distribution
+  - The light blue lines are again the estimations of the distribution
+- There's no clear reason why the censoring increases with time, except that people don't want to respond to a study for long time
+- More complete survival analysis needs more work done, and its out of scope
 
 
 # Nicola slides:
